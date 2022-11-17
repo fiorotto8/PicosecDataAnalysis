@@ -1,0 +1,5 @@
+base_path="../TestBeams/October2022/"
+scope="Pool2/"
+run_path=base_path+"Runs/"+scope+"Run"
+result_path=base_path+"Results/Run"
+trk_path=base_path+"tracker/"
