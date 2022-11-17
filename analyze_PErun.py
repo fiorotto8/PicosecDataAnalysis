@@ -11,8 +11,6 @@ import tqdm
 import math as m
 import time
 
-print("culo")
-
 file = open("path.txt", "r")
 for string in file:
     exec(string)
