@@ -174,8 +174,10 @@ if args.draw=="0":
     pool.close()
 else:
     results=[]
-    for wave in waves:
+    for wave in tqdm.tqdm(waves):
+        wf.ScopeSignalSlow(wave["T"],wave["V"],args.name+str(i),risetimeCut=50E-9).WaveSave(EpeakLines=True, Write=True)
         results.append(AnalWave(wave["T"],wave["V"],args.name+str(i)))
+
 
 print("Analyzing time (s):", time.time()-start)
 

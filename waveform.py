@@ -154,12 +154,6 @@ class TimeAnal:
         sumDut.Draw("SAME")
         c.Write()
 
-
-
-
-
-    #def ArrivalTimeCFD(self, fraction=0.2, delay=1):
-
 class ScopeSignalCividec:
     def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2, sigma=5, risetimeCut=1E-9):
         self.badSignalFlag = False
