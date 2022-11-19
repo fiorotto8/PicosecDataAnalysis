@@ -991,29 +991,52 @@ class SignalPlot():#this class is basically just for debugging
         return can1
 
 class ChargeDistr():
-    def __init__(self, x, name, rangeFrac=0.01):
+    def __init__(self, x, name, channels, bin="lin", rangeFrac=0.01):
         self.name = name
         self.x=nparr(x)
         self.entries=len(self.x)
+        self.channels=channels
         self.range=[(1-rangeFrac)*np.min(self.x),(1+rangeFrac)*np.max(self.x)]
+        #set automatically if these are charges or amplitudes
+        if np.mean(x)<1E-6:
+            self.type="Charge (C)"
+        else:
+            self.type="Amplitude (-V)"
+        self.hist=self.GetHist(bin=bin)
 
-    def GetHist(self, channels=100, linecolor=4, linewidth=4,Norm=False):
-        hist=ROOT.TH1D(self.name+"_ChDistr",self.name+"_ChDistr",channels,self.range[0], self.range[1])
+
+    def GetHist(self, linecolor=4, linewidth=4,Norm=False,bin="lin"):
+        if self.type=="Charge (C)": 
+           if bin=="lin":
+               hist=ROOT.TH1D(self.name+"_ChargeDistr",self.name+"_ChargeDistr",self.channels,self.range[0], self.range[1])
+           elif bin=="log":
+               custom_bins=np.logspace(np.log10(self.range[0]),np.log10(self.range[1]), self.channels+1)
+               hist=ROOT.TH1D(self.name+"_ChargeDistr",self.name+"_ChargeDistr",self.channels,custom_bins)
+        else: 
+           if bin=="lin":
+               hist=ROOT.TH1D(self.name+"_AmpDistr",self.name+"_AmpDistr",self.channels,self.range[0], self.range[1])
+           elif bin=="log":
+               custom_bins=np.logspace(np.log10(self.range[0]),np.log10(self.range[1]), self.channels+1)
+               hist=ROOT.TH1D(self.name+"_AmpDistr",self.name+"_AmpDistr",self.channels,custom_bins)
+            
         for x in self.x: hist.Fill(x)
         if Norm==True:
-            for i in range(channels):
+            for i in range(self.channels):
                 hist.SetBinContent(i,hist.GetBinContent(i)/self.entries)
         hist.SetLineColor(linecolor)
         hist.SetLineWidth(linewidth)
-        hist.GetXaxis().SetTitle("Charge (C)")
+        if self.type=="Charge (C)":
+            hist.GetXaxis().SetTitle("Charge (C)")
+        else:
+            hist.GetXaxis().SetTitle("Amplitudes (-V)")
         hist.GetYaxis().SetTitle("Entries")
         #hist.SetStats(False)
         hist.GetYaxis().SetMaxDigits(3);
         hist.GetXaxis().SetMaxDigits(3);
         return hist
 
-    def PolyaFit(self,printStart=False,GetChi=True, save=False, path="./",rangemin="max",channels=200):
-        hist=self.GetHist()
+    def PolyaFit(self,printStart=False,GetChi=True, save=False, path="./",rangemin="max"):
+        hist=self.hist
         #polyaTF1=ROOT.TF1("polyaTF1", "[0]*ROOT::Math::negative_binomial_pdf([0],x,[1])" ,self.range[0], self.range[1])
         amp=hist.GetBinContent(hist.GetMaximumBin())
         mean=hist.GetMean()
@@ -1036,7 +1059,10 @@ class ChargeDistr():
         hist.Write()
 
         if save==True:
-            c=ROOT.TCanvas(self.name+"_ChDistr",self.name+"_ChDistr"    ,800,800)
+            if self.type=="Charge (C)":
+                c=ROOT.TCanvas(self.name+"_ChargeDistr",self.name+"_ChargeDistr"    ,800,800)
+            else:
+                c=ROOT.TCanvas(self.name+"_AmplitudeDistr",self.name+"_AmplitudeDistr"    ,800,800)
             hist.SetStats(False)
             hist.Draw()
             c.SetLogy()
@@ -1050,7 +1076,6 @@ class ChargeDistr():
             c.Write()
             c.SaveAs(path+str(hist.GetName())+".png")
 
-
         if GetChi==False:
             output=nparr([polyaTF1.GetParameter(0),polyaTF1.GetParameter(1),polyaTF1.GetParError(1),polyaTF1.GetParameter(1)/(1+polyaTF1.GetParameter(2))])
         else:
@@ -1058,40 +1083,41 @@ class ChargeDistr():
 
         return output
 
-    def ComplexPolya(self,amplitudes, channels=1000,path="./"):
-        hist=ROOT.TH1D(self.name+"_ChDistr",self.name+"_ChDistr",channels,0.99*np.min(amplitudes),1.01*np.max(amplitudes))
-        fill_h(hist,amplitudes)
-        hist.SetLineColor(4)
-        hist.SetLineWidth(4)
-        hist.GetXaxis().SetTitle("Charge(C)")
-        hist.GetYaxis().SetTitle("Entries")
-
-        #get bin of hte maxium
+    def ComplexPolya(self,path="./"):
+        hist=self.hist
+        #get bin of the maxium
         peakpos=hist.GetBinCenter(hist.GetMaximumBin())
         #Gaus fit near the peak to understand the parameters
         gaussian=ROOT.TF1("gaussian",'gaus',peakpos*0.9, peakpos*1.1)
-        hist.Fit("gaussian","RQ","",hist.GetBinCenter(hist.GetMaximumBin()-20), hist.GetBinCenter(hist.GetMaximumBin()+25))
+        hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-5), hist.GetBinCenter(hist.GetMaximumBin()+5))
+        if self.type=="Charge (C)":
+            hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-20), hist.GetBinCenter(hist.GetMaximumBin()+20))
+        else:
+            hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-3), hist.GetBinCenter(hist.GetMaximumBin()+4))
+     
         A,m,s=gaussian.GetParameter(0),gaussian.GetParameter(1),gaussian.GetParameter(2)
         hist.Write()
 
         #ploya fit with gaus fixed (not the amplitude)
-        polyaTF1=ROOT.TF1("polyaTF1",'[0]*TMath::Power(1+[2],1+[2])/ROOT::Math::tgamma(1+[2])*TMath::Power(x/[1],[2])*TMath::Exp(-(1+[2])*x/[1])+gaus(3)' ,0,np.max(amplitudes))
+        polyaTF1=ROOT.TF1("polyaTF1",'[0]*TMath::Power(1+[2],1+[2])/ROOT::Math::tgamma(1+[2])*TMath::Power(x/[1],[2])*TMath::Exp(-(1+[2])*x/[1])+gaus(3)' ,0,np.max(self.x))
         polyaTF1.SetParameters(0.5*A,hist.GetMean(), 1,0.5*A,m,s)
         #polyaTF1.FixParameter(4,m)
         #polyaTF1.SetParLimits(5,s*0.9,s*1.1)
         polyaTF1.SetParNames("Amplitude", "Gain", "theta", "A","m","s")
-        #first on all range
-        hist.Fit("polyaTF1","Q","",0,np.max(amplitudes))
-        #second on a smaller range
-        #hist.Fit("polyaTF1","Q","",m-3*s,np.max(amplitudes))
-        #third
-        hist.Fit("polyaTF1","Q","",m-s,np.max(amplitudes))
+        if self.type=="Charge (C)":
+            hist.Fit("polyaTF1","Q","",0,np.max(self.x))    
+            hist.Fit("polyaTF1","Q","",m-1.5*s,np.max(self.x))     
+        else:
+            hist.Fit("polyaTF1","Q","",m-1.5*s,np.max(self.x))     
 
 
         #hist.Write()
         hist.SetStats(False)
 
-        c=ROOT.TCanvas(self.name+"_ChDistr",self.name+"_ChDistr"    ,800,800)
+        if self.type=="Charge (C)":
+            c=ROOT.TCanvas(self.name+"_ChargeDistr",self.name+"_ChargeDistr"    ,800,800)
+        else:
+            c=ROOT.TCanvas(self.name+"_AmplitudeDistr",self.name+"_AmplitudeDistr"    ,800,800)
         hist.Draw()
         c.SetLogy()
 

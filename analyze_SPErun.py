@@ -204,18 +204,21 @@ if len(sigma)!=0:
     #the amplifier Gain is not exacly know (well we can calibrate it)
     #However, to measure PE/MIP we do the ratio between mean charges so
     #it is just an offset
-    charge=wf.ChargeDistr(echarges, "Run"+str(run_num))
+charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=100,bin="lin")
+amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=100,bin="log")
 
-    if args.polya=="1":
-        a=charge.ComplexPolya(echarges,path=result_path)
-    else:
-        a=charge.PolyaFit(save=True, path=result_path)
-    print("Mean Charge Run"+str(run_num),a[1],"+/-",a[2], "Chi2/NDF:",a[4])
+if args.polya=="1":
+    a=charge.ComplexPolya(path=result_path)
+    b=amps.ComplexPolya(path=result_path)
+else:
+    a=charge.PolyaFit(save=True, path=result_path)
+    b=amps.PolyaFit(save=True, path=result_path)
+print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
 if args.writecsv=="1":
     f = open(base_path+"resultsPE.csv", "a")
-    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
+    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
+    f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
     f.close()
 
 
