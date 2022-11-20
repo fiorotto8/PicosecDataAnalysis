@@ -134,7 +134,7 @@ for i in range(4):
 print("################Analysing Run"+run_num+"################")
 #check if folder exist, if not create it
 if not os.path.isdir(result_path):
-     os.makedirs(result_path)
+    os.makedirs(result_path)
 
 main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creation
 if args.batch=="1": ROOT.gROOT.SetBatch(True)
@@ -200,12 +200,12 @@ if len(sigma)!=0:
     hist2D("AmpChargeCorr", amplitudes,echarges,"Amplitudes(-V)","Echarge(C)")
     graph(np.arange(0,len(amplitudes),1),amplitudes,"Time(a.u.)","Amplitudes(-V)")
 
-    #with the slow amplifier the charge is not exactly the charge beacuse
-    #the amplifier Gain is not exacly know (well we can calibrate it)
-    #However, to measure PE/MIP we do the ratio between mean charges so
-    #it is just an offset
-charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=100,bin="lin")
-amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=100,bin="log")
+#with the slow amplifier the charge is not exactly the charge beacuse
+#the amplifier Gain is not exacly know (well we can calibrate it)
+#However, to measure PE/MIP we do the ratio between mean charges so
+#it is just an offset
+charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=1000,bin="lin")
+amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 
 if args.polya=="1":
     a=charge.ComplexPolya(path=result_path)

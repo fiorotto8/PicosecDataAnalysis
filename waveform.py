@@ -1091,10 +1091,9 @@ class ChargeDistr():
         gaussian=ROOT.TF1("gaussian",'gaus',peakpos*0.9, peakpos*1.1)
         hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-5), hist.GetBinCenter(hist.GetMaximumBin()+5))
         if self.type=="Charge (C)":
-            hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-20), hist.GetBinCenter(hist.GetMaximumBin()+20))
+            hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-20), hist.GetBinCenter(hist.GetMaximumBin()+25))
         else:
-            hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-3), hist.GetBinCenter(hist.GetMaximumBin()+4))
-     
+            hist.Fit("gaussian","Q","",hist.GetBinCenter(hist.GetMaximumBin()-20), hist.GetBinCenter(hist.GetMaximumBin()+25))
         A,m,s=gaussian.GetParameter(0),gaussian.GetParameter(1),gaussian.GetParameter(2)
         hist.Write()
 
@@ -1106,10 +1105,12 @@ class ChargeDistr():
         polyaTF1.SetParNames("Amplitude", "Gain", "theta", "A","m","s")
         if self.type=="Charge (C)":
             hist.Fit("polyaTF1","Q","",0,np.max(self.x))    
-            hist.Fit("polyaTF1","Q","",m-1.5*s,np.max(self.x))     
+            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x))     
         else:
-            hist.Fit("polyaTF1","Q","",m-1.5*s,np.max(self.x))     
-
+            #hist.Fit("polyaTF1","Q","",0,np.max(self.x))    
+            polyaTF1.SetParLimits(4,0.5*m, 1.5*m)
+            polyaTF1.SetParLimits(5,0.5*s, 1.5*s)
+            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x)) 
 
         #hist.Write()
         hist.SetStats(False)

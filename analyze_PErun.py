@@ -184,7 +184,7 @@ print("################Analysing Run"+run_num+"################")
 
 #check if folder exist, if not create it
 if not os.path.isdir(result_path):
-     os.makedirs(result_path)
+    os.makedirs(result_path)
 
 main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creation
 #main=ROOT.TFile("Run_"+run_num+".root","RECREATE")#root file creation
@@ -337,8 +337,8 @@ Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0,max=50)
 #However, to measure PE/MIP we do the ratio between mean charges so
 #it is just an offset
 main.cd()
-charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=100,bin="lin")
-amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=100,bin="log")
+charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=200,bin="lin")
+amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=200,bin="lin")
 
 if args.polya=="1":
     a=charge.ComplexPolya(path=result_path)
@@ -351,7 +351,7 @@ print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 if args.writecsv=="1":
     f = open(base_path+"resultsPE.csv", "a")
     #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
+    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
     f.close()
 
 

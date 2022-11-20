@@ -23,6 +23,7 @@ python3 analyze_SPErun.py -r 260
 python3 analyze_SPErun.py -r 259
 python3 analyze_SPErun.py -r 258
 #photoelectrons from beam
+<<com
 python3 analyze_PErun.py -r 026
 python3 analyze_PErun.py -r 027
 python3 analyze_PErun.py -r 028
@@ -41,3 +42,4 @@ python3 analyze_PErun.py -r 266
 python3 analyze_PErun.py -r 267
 python3 analyze_PErun.py -r 269
 #timing runs
+com
