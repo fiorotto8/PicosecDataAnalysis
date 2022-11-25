@@ -215,14 +215,14 @@ for i in tqdm.tqdm(range(len(files_DUT[:num]))):
 
 #DUT
 noisesDUT, echargesDUT, amplitudesDUT, badDUT,notRecoDUT, sigmaDUT, risetimeDUT=[],[],[],[],[],[],[]
-xDUT,yDUT=[],[],[]
+xDUT,yDUT=[],[]
 #REF
 noisesREF, echargesREF, amplitudesREF, badREF,notRecoREF, sigmaREF, risetimeREF=[],[],[],[],[],[],[]
-xREF,yREF=[],[],[]
+xREF,yREF=[],[]
 
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
 df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
-track_info=df[[df.columns[0], df.columns[9],df.columns[10]]]
+track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
 track_info=track_info.set_index(track_info.columns[0])
 

@@ -221,7 +221,7 @@ ID,x,y=[],[],[]
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
 df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
-track_info=df[[df.columns[0], df.columns[9],df.columns[10]]]
+track_info=df[[df.columns[0], "X"+args.channel+" ","Y"+args.channel+" "]]
 track_info=track_info.set_index(track_info.columns[0])
 
 main.mkdir("RawWaveforms")
