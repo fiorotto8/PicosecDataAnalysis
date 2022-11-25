@@ -156,6 +156,16 @@ def Canvas1D(plot):
 
     c.SaveAs(path+str(plot.GetName())+".png")
 
+def plotsDF(df, textOFF):
+    #1D plots
+    for c in df.columns:
+        hist(df[c], textOFF+c)
+    #2D plots
+    for c in df.columns[2:]:
+        hist(df[c], textOFF+c)
+        plot=graph2D(textOFF+" map "+c,df[df.columns[0]],df[df.columns[1]],df[c], "x (mm)", "y (mm)", c)
+        Canvas2D(plot,result_path,np.max(df[c]),Np=50,min=0, max=50)
+
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
@@ -213,16 +223,63 @@ for i in tqdm.tqdm(range(len(files_DUT[:num]))):
     wavesREF.extend(Seq_REF.GetWaves())
     waves_trk.extend(Seq_trk.GetWaves())
 
-#DUT
-noisesDUT, echargesDUT, amplitudesDUT, badDUT,notRecoDUT, sigmaDUT, risetimeDUT=[],[],[],[],[],[],[]
-xDUT,yDUT=[],[]
-#REF
-noisesREF, echargesREF, amplitudesREF, badREF,notRecoREF, sigmaREF, risetimeREF=[],[],[],[],[],[],[]
-xREF,yREF=[],[]
+#structure:
+"""
+# 0-->X
+# 1-->Y
+# 2-->noise
+# 3-->echarge
+# 4-->amplitude
+# 5-->sigma
+# 6-->risetime
+# 7-->SAT
+"""
+dataDUT, dataREF, notReco,badDUT, badREF=[],[],[],[],[]
 
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
 df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
 track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
 track_info=track_info.set_index(track_info.columns[0])
+track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
+
+main.mkdir("RawWaveforms/DUT")
+main.mkdir("RawWaveforms/REF")
+print("Analyzing")
+for i in tqdm.tqdm(range(len(wavesDUT))):
+    track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
+    #get coordniates and discaard the non resctostruded events
+    if track.ID not in track_info.index:
+        notReco.append(i)
+        continue
+    else:
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=0.5E-9,sigma=5)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=0.1E-9,sigma=5)
+        if args.draw=="1" and signalDUT.badSignalFlag==False:
+            main.cd("RawWaveforms/DUT")
+            signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
+            main.cd("RawWaveforms/REF")
+            signalREF.WaveSave(EpeakLines=True,Write=True,Zoom=True)
+        #check if signal is bad
+        if signalDUT.badSignalFlag==True:
+            badDUT.append(i)
+            continue
+        elif signalREF.badSignalFlag==True:
+            badREF.append(i)
+            continue
+        else:
+            dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.ArrivalTimeCFDFit()])
+            dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.ArrivalTimeCFDFit()])
+            #main.cd("RawWaveforms/DUT")
+            #signalDUT.SigmoidFit(write=True)
+            #main.cd("RawWaveforms/REF")
+            #signalREF.SigmoidFit(write=True)
+
+#create dataframe and plot results
+main.cd()
+dfDUT = pd.DataFrame(dataDUT,columns=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"])
+dfREF = pd.DataFrame(dataREF,columns=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"])
+plotsDF(dfDUT,"DUT NO CUT")
+plotsDF(dfREF,"REF NO CUT")
+
 

@@ -385,7 +385,7 @@ class ScopeSignalCividec:
         start1=self.risetime/mult1
         start2=(self.tFitMax+self.tFitMin)/mult2
 
-        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1])))",0.8*self.tFitMin,1.01*self.tFitMax)
+        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1])))",0.99*self.tFitMin,1.001*self.tFitMax)
         sigmoid.SetParameters(start0, start1, start2)
         sigmoid.FixParameter(0,start0)
         #sigmoid.SetParLimits(0,0.9*start0,1.1*start0)
@@ -565,7 +565,9 @@ class ScopeSignalSlow:
         can1.SetFixedAspectRatio();
         if Zoom==True:
             plot.GetXaxis().SetRangeUser(0.8*self.Epeakmin, 2*self.Epeakmax)
-        plot.Draw("AP")
+        plot.SetMarkerSize(0.001)
+        plot.SetLineColor(4)
+        plot.Draw("ALP")
         if EpeakLines==True:
             can1.Update()
             ymax=ROOT.gPad.GetUymax()
@@ -597,7 +599,7 @@ class ScopeSignalSlow:
             t3.SetTextColor(4)
 
             p.Draw("SAME")
-            if Write==True: can1.Write()
+        if Write==True: can1.Write()
         if Save==True: can1.SaveAs(self.name+".png")
         return can1
 
@@ -736,7 +738,7 @@ class ScopeSignalSlow:
         start1=self.risetime/mult1
         start2=(self.tFitMax+self.tFitMin)/mult2
 
-        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1])))",0.8*self.tFitMin,1.01*self.tFitMax)
+        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1])))",self.tFitMin,self.tFitMax)
         sigmoid.SetParameters(start0, start1, start2)
         sigmoid.FixParameter(0,start0)
         #sigmoid.SetParLimits(0,0.9*start0,1.1*start0)
@@ -803,11 +805,11 @@ class ScopeSignalSlow:
                 continue
         return tarr
 
-    def ArrivalTimeCFDFit(self, fraction=0.2,delay=1E-9):
+    def ArrivalTimeCFDFit(self, fraction=0.2,delay=0.5E-9):
         """
         Analytially find the zero crossing of the CFD
         """
-        FitFunc=self.SigmoidFit(test=False,write=False)
+        FitFunc=self.SigmoidFit(test=False,write=True)
         sigma=FitFunc.GetParameter(1)
         f=fraction
         D=delay
@@ -1006,19 +1008,19 @@ class ChargeDistr():
 
 
     def GetHist(self, linecolor=4, linewidth=4,Norm=False,bin="lin"):
-        if self.type=="Charge (C)": 
-           if bin=="lin":
-               hist=ROOT.TH1D(self.name+"_ChargeDistr",self.name+"_ChargeDistr",self.channels,self.range[0], self.range[1])
-           elif bin=="log":
-               custom_bins=np.logspace(np.log10(self.range[0]),np.log10(self.range[1]), self.channels+1)
-               hist=ROOT.TH1D(self.name+"_ChargeDistr",self.name+"_ChargeDistr",self.channels,custom_bins)
-        else: 
-           if bin=="lin":
-               hist=ROOT.TH1D(self.name+"_AmpDistr",self.name+"_AmpDistr",self.channels,self.range[0], self.range[1])
-           elif bin=="log":
-               custom_bins=np.logspace(np.log10(self.range[0]),np.log10(self.range[1]), self.channels+1)
-               hist=ROOT.TH1D(self.name+"_AmpDistr",self.name+"_AmpDistr",self.channels,custom_bins)
-            
+        if self.type=="Charge (C)":
+            if bin=="lin":
+                hist=ROOT.TH1D(self.name+"_ChargeDistr",self.name+"_ChargeDistr",self.channels,self.range[0], self.range[1])
+            elif bin=="log":
+                custom_bins=np.logspace(np.log10(self.range[0]),np.log10(self.range[1]), self.channels+1)
+                hist=ROOT.TH1D(self.name+"_ChargeDistr",self.name+"_ChargeDistr",self.channels,custom_bins)
+        else:
+            if bin=="lin":
+                hist=ROOT.TH1D(self.name+"_AmpDistr",self.name+"_AmpDistr",self.channels,self.range[0], self.range[1])
+            elif bin=="log":
+                custom_bins=np.logspace(np.log10(self.range[0]),np.log10(self.range[1]), self.channels+1)
+                hist=ROOT.TH1D(self.name+"_AmpDistr",self.name+"_AmpDistr",self.channels,custom_bins)
+
         for x in self.x: hist.Fill(x)
         if Norm==True:
             for i in range(self.channels):
@@ -1104,13 +1106,13 @@ class ChargeDistr():
         #polyaTF1.SetParLimits(5,s*0.9,s*1.1)
         polyaTF1.SetParNames("Amplitude", "Gain", "theta", "A","m","s")
         if self.type=="Charge (C)":
-            hist.Fit("polyaTF1","Q","",0,np.max(self.x))    
-            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x))     
+            hist.Fit("polyaTF1","Q","",0,np.max(self.x))
+            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x))
         else:
-            #hist.Fit("polyaTF1","Q","",0,np.max(self.x))    
+            #hist.Fit("polyaTF1","Q","",0,np.max(self.x))
             polyaTF1.SetParLimits(4,0.5*m, 1.5*m)
             polyaTF1.SetParLimits(5,0.5*s, 1.5*s)
-            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x)) 
+            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x))
 
         #hist.Write()
         hist.SetStats(False)
