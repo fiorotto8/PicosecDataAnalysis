@@ -380,12 +380,12 @@ class ScopeSignalCividec:
         y=np.gradient(self.y, edge_order)
         return ScopeSignal(self.x, y, "Derivative_"+self.name)
     """
-    def SigmoidFit(self,mult1=4, mult2=2,test=False,write=False):
+    def SigmoidFit(self,mult1=4, mult2=2,test=False,write=False,LeftPoints=50,RightPoints=2):
         start0=self.Ampmin
         start1=self.risetime/mult1
         start2=(self.tFitMax+self.tFitMin)/mult2
 
-        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1])))",0.99*self.tFitMin,1.001*self.tFitMax)
+        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1])))",self.tFitMin-(LeftPoints*self.sampling),self.tFitMax+(RightPoints*self.sampling))
         sigmoid.SetParameters(start0, start1, start2)
         sigmoid.FixParameter(0,start0)
         #sigmoid.SetParLimits(0,0.9*start0,1.1*start0)
@@ -461,8 +461,8 @@ class ScopeSignalCividec:
         f=fraction
         D=delay
         mu=FitFunc.GetParameter(2)
-        return -sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
-
+        sat=-sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
+        return sat
 
     def FindParCFD(self, fraction, delay, sigma, mu):
         """

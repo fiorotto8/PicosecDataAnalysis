@@ -162,7 +162,6 @@ def plotsDF(df, textOFF):
         hist(df[c], textOFF+c)
     #2D plots
     for c in df.columns[2:]:
-        hist(df[c], textOFF+c)
         plot=graph2D(textOFF+" map "+c,df[df.columns[0]],df[df.columns[1]],df[c], "x (mm)", "y (mm)", c)
         Canvas2D(plot,result_path,np.max(df[c]),Np=50,min=0, max=50)
 
@@ -268,18 +267,47 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             badREF.append(i)
             continue
         else:
-            dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.ArrivalTimeCFDFit()])
-            dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.ArrivalTimeCFDFit()])
-            #main.cd("RawWaveforms/DUT")
-            #signalDUT.SigmoidFit(write=True)
-            #main.cd("RawWaveforms/REF")
-            #signalREF.SigmoidFit(write=True)
+            SATDUT=signalDUT.ArrivalTimeCFDFit()
+            SATREF=signalREF.ArrivalTimeCFDFit()
+            #if nan is returned the CFD is out of domain
+            #DOMAIN IS:
+            #sigma<=Delay/(ln(1/fraction))
+            if m.isnan(SATDUT):
+                badDUT.append(i)
+            elif m.isnan(SATREF):
+                badREF.append(i)
+            else:
+                dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, SATDUT])
+                dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, SATREF])
+                #main.cd("RawWaveforms/DUT")
+                #signalDUT.SigmoidFit(write=True)
+                #main.cd("RawWaveforms/REF")
+                #signalREF.SigmoidFit(write=True)
 
 #create dataframe and plot results
-main.cd()
+main.mkdir("NO CUT PLOT")
+main.cd("NO CUT PLOT")
 dfDUT = pd.DataFrame(dataDUT,columns=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"])
 dfREF = pd.DataFrame(dataREF,columns=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"])
 plotsDF(dfDUT,"DUT NO CUT")
 plotsDF(dfREF,"REF NO CUT")
+timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
+hist(timeDIFF, "time difference NO CUT")
 
+xmDUT, ymDUT, xmREF, ymREF=np.mean(dfDUT["X"]),np.mean(dfDUT["Y"]),np.mean(dfREF["X"]),np.mean(dfREF["Y"])
+draw_cut=100#mm radius from the center both the detector!
 
+drop_indexDUT,drop_indexREF=[],[]
+drop_index=dfDUT[pow((dfDUT["X"]-xmDUT),2)+pow((dfDUT["Y"]-ymDUT),2) > draw_cut].index
+drop_index.union(dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index)
+#drop_indexREF=dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index
+eventDrawCut=1-len(drop_index)/(len(dfDUT["X"]))
+print("Survival after GEO cut:",eventDrawCut)
+dfDUT,dfREF = dfDUT.drop(drop_index),dfREF.drop(drop_index)
+
+main.mkdir("GEO CUT PLOT")
+main.cd("GEO CUT PLOT")
+plotsDF(dfDUT,"DUT NO CUT")
+plotsDF(dfREF,"REF NO CUT")
+timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
+hist(timeDIFF, "time difference NO CUT")
