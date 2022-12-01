@@ -19,11 +19,23 @@ file.close()
 def nparr(list):
     return np.array(list, dtype="d")
 
+def cart2pol(x, y):
+    x=x-np.mean(x)
+    y=y-np.mean(y)
+    rho = np.sqrt(np.square(x) + np.square(y))
+    phi = np.arctan2(y, x)
+    return(rho, phi)
+
+def pol2cart(rho, phi):
+    x = rho * np.cos(phi)
+    y = rho * np.sin(phi)
+    return(x, y)
+
 def fill_h(histo_name, array):
     for x in range (len(array)):
         histo_name.Fill((np.array(array[x] ,dtype="d")))
 
-def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
+def hist(list, x_name, channels=100, linecolor=4, linewidth=4,write=True):
 
     array=np.array(list ,dtype="d")
 
@@ -33,14 +45,14 @@ def hist(list, x_name, channels=100, linecolor=4, linewidth=4):
     hist.SetLineWidth(linewidth)
     hist.GetXaxis().SetTitle(x_name)
     hist.GetYaxis().SetTitle("Entries")
-    hist.Write()
+    if write==True: hist.Write()
     #hist.SetStats(False)
     hist.GetYaxis().SetMaxDigits(3);
     hist.GetXaxis().SetMaxDigits(3);
     #hist.Write()
     return hist
 
-def hist2D(name,list_x, list_y, x_name, y_name, channels=20, linecolor=4, linewidth=4):
+def hist2D(name,list_x, list_y, x_name="x", y_name="y", channels=20, linecolor=4, linewidth=4):
     def fill_h(histo_name, array_x, array_y):
         for x in range (len(array_x)):
             histo_name.Fill(array_x[x],array_y[x])
@@ -158,6 +170,7 @@ def Canvas1D(plot):
 
 def plotsDF(df, textOFF):
     #1D plots
+    hist2D(textOFF+" XY distribution",df[df.columns[0]], df[df.columns[1]], channels=50)
     for c in df.columns:
         hist(df[c], textOFF+c)
     #2D plots
@@ -242,8 +255,10 @@ track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "
 track_info=track_info.set_index(track_info.columns[0])
 track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
 
-main.mkdir("RawWaveforms/DUT")
-main.mkdir("RawWaveforms/REF")
+main.mkdir("RawWaveforms/DUT/Fit")
+main.mkdir("RawWaveforms/REF/Fit")
+main.mkdir("RawWaveforms/DUT/Signal")
+main.mkdir("RawWaveforms/REF/Signal")
 print("Analyzing")
 for i in tqdm.tqdm(range(len(wavesDUT))):
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
@@ -252,12 +267,12 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=0.5E-9,sigma=5)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=0.1E-9,sigma=5)
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=0.5E-9,sigma=5,fit=True)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=0.1E-9,sigma=5,fit=True)
         if args.draw=="1" and signalDUT.badSignalFlag==False:
-            main.cd("RawWaveforms/DUT")
+            main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
-            main.cd("RawWaveforms/REF")
+            main.cd("RawWaveforms/REF/Signal")
             signalREF.WaveSave(EpeakLines=True,Write=True,Zoom=True)
         #check if signal is bad
         if signalDUT.badSignalFlag==True:
@@ -267,39 +282,38 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             badREF.append(i)
             continue
         else:
-            SATDUT=signalDUT.ArrivalTimeCFDFit()
-            SATREF=signalREF.ArrivalTimeCFDFit()
-            #if nan is returned the CFD is out of domain
-            #DOMAIN IS:
-            #sigma<=Delay/(ln(1/fraction))
-            if m.isnan(SATDUT):
-                badDUT.append(i)
-            elif m.isnan(SATREF):
-                badREF.append(i)
-            else:
-                dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, SATDUT])
-                dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, SATREF])
-                #main.cd("RawWaveforms/DUT")
-                #signalDUT.SigmoidFit(write=True)
-                #main.cd("RawWaveforms/REF")
-                #signalREF.SigmoidFit(write=True)
+            dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat])
+            dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat])
+            if args.draw=="1" and signalDUT.badSignalFlag==False:
+                main.cd("RawWaveforms/DUT/Fit")
+                signalDUT.SigmoidFit(write=True)
+                main.cd("RawWaveforms/REF/Fit")
+                signalREF.SigmoidFit(write=True)
+
+cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"]
 
 #create dataframe and plot results
 main.mkdir("NO CUT PLOT")
 main.cd("NO CUT PLOT")
-dfDUT = pd.DataFrame(dataDUT,columns=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"])
-dfREF = pd.DataFrame(dataREF,columns=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"])
+dfDUT = pd.DataFrame(dataDUT,columns=cols)
+dfREF = pd.DataFrame(dataREF,columns=cols)
+
+rDUT,thetaDUT=cart2pol(dfDUT["X"],dfDUT["Y"])
+rREF,thetaREF=cart2pol(dfREF["X"],dfREF["Y"])
+dfDUT=dfDUT.assign(radius=rDUT,angle=thetaDUT)
+dfREF=dfREF.assign(radius=rREF,angle=thetaREF)
+
 plotsDF(dfDUT,"DUT NO CUT")
 plotsDF(dfREF,"REF NO CUT")
 timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
-hist(timeDIFF, "time difference NO CUT")
+hist(timeDIFF, "time difference NO CUT",channels=500)
 
 xmDUT, ymDUT, xmREF, ymREF=np.mean(dfDUT["X"]),np.mean(dfDUT["Y"]),np.mean(dfREF["X"]),np.mean(dfREF["Y"])
-draw_cut=100#mm radius from the center both the detector!
+draw_cut=4#mm radius from the center both the detector!
 
 drop_indexDUT,drop_indexREF=[],[]
-drop_index=dfDUT[pow((dfDUT["X"]-xmDUT),2)+pow((dfDUT["Y"]-ymDUT),2) > draw_cut].index
-drop_index.union(dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index)
+drop_index=dfDUT[dfDUT["radius"] > draw_cut].index
+drop_index.union(dfDUT[dfREF["radius"] > draw_cut].index)
 #drop_indexREF=dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index
 eventDrawCut=1-len(drop_index)/(len(dfDUT["X"]))
 print("Survival after GEO cut:",eventDrawCut)
@@ -307,7 +321,16 @@ dfDUT,dfREF = dfDUT.drop(drop_index),dfREF.drop(drop_index)
 
 main.mkdir("GEO CUT PLOT")
 main.cd("GEO CUT PLOT")
-plotsDF(dfDUT,"DUT NO CUT")
-plotsDF(dfREF,"REF NO CUT")
+plotsDF(dfDUT,"DUT GEO CUT")
+plotsDF(dfREF,"REF GEO CUT")
 timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
-hist(timeDIFF, "time difference NO CUT")
+hist(timeDIFF, "time difference GEO CUT",channels=100)
+
+TimeCut=0.3E-9
+#try to cut
+timeDiffSel, TDmin, TDmax=[], np.median(timeDIFF)-3*TimeCut, np.median(timeDIFF)+3*TimeCut
+for td in timeDIFF:
+    #print(td,TDmax,TDmin)
+    if td>=TDmin and TDmax<=TDmax:
+        timeDiffSel.append(td)
+timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=100,write=True)

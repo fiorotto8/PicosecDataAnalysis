@@ -155,7 +155,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2, sigma=5, risetimeCut=1E-9):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2, sigma=5, risetimeCut=1E-9,fit=False,satcut=[0.218E-6,0.231E-6]):
         self.badSignalFlag = False
 
         self.name = name
@@ -198,6 +198,14 @@ class ScopeSignalCividec:
 
         self.Integral=(np.sum(self.y)/self.AmplifierGain)*(self.scopeImpedence*self.sampling)
         self.EpeakCharge, self.Gain=self.GetGain()
+
+        if fit==True:
+            self.sat=self.ArrivalTimeCFDFit()
+            #if nan is returned the CFD is out of domain
+            #DOMAIN IS:
+            #sigma<=Delay/(ln(1/fraction))
+            if self.sat<=satcut[0] or self.sat>=satcut[1] or m.isnan(self.sat):
+                self.badSignalFlag = True
 
     def isBad(self):
         self.badSignalFlag = True
@@ -461,7 +469,8 @@ class ScopeSignalCividec:
         f=fraction
         D=delay
         mu=FitFunc.GetParameter(2)
-        sat=-sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
+        try: sat=-sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
+        except: pass
         return sat
 
     def FindParCFD(self, fraction, delay, sigma, mu):
