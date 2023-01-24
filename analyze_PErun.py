@@ -165,7 +165,7 @@ parser.add_argument('-c','--channel',help='chennel to analyze defaut=2', action=
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
 parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
-parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
+parser.add_argument('-po','--polya',help='Enable the complex polya fit', action='store', default="0")
 
 args = parser.parse_args()
 
@@ -247,16 +247,17 @@ for i in tqdm.tqdm(range(len(waves))):
             bad.append(i)
             continue
         else:
-
             x.append(track_info[track_info.columns[0]][track.ID])
             y.append(track_info[track_info.columns[1]][track.ID])
 
-            sigma.append(signal.SigmaOutNoise)
-            noises.append(signal.baseLine)
-            echarges.append(signal.EpeakCharge)
-            gain.append(signal.Gain)
-            risetime.append(signal.risetime)
-            amplitudes.append(-1*signal.Ampmin)
+        sigma.append(signal.SigmaOutNoise)
+        noises.append(signal.baseLine)
+        echarges.append(signal.EpeakCharge)
+        gain.append(signal.Gain)
+        risetime.append(signal.risetime)
+        amplitudes.append(-1*signal.Ampmin)
+
+hist(noises, "Baseline")
 
 #DRAWING CUT
 #calculate centroid of device by average

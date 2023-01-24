@@ -298,10 +298,10 @@ class ScopeSignalCividec:
         """
         return self.y[self.x<fraction*self.tFitMax]
 
-    def GetMeanNoise(self):
+    def GetMeanNoise(self, minnoise=1E-5):
         all_noise=self.GetNoiseList()
         if len(all_noise)<=1:
-            n=1E-20
+            n=minnoise
         else:
             n=np.mean(nparr(all_noise))
         return n
@@ -314,13 +314,13 @@ class ScopeSignalCividec:
             n=np.std(noise)/np.sqrt(len(noise))
         return n
 
-    def GetStdNoise(self):
+    def GetStdNoise(self,minstd=1-5):
         noise=nparr(self.GetNoiseList())
         if len(noise)<=1:
-            std=1E-20
+            std=minstd
         else:
             std=np.std(noise)
-        if std==0.: std=1E-20
+        if std==0.: std=minstd
         return std
 
     def GetNoiseHisto(self):
@@ -496,7 +496,6 @@ class ScopeSignalSlow:
         self.y=nparr(y)
         self.samples=len(x)
 
-
         #derivation
         #y=np.gradient(self.y, edge_order)
         #averaging
@@ -626,11 +625,11 @@ class ScopeSignalSlow:
         #print(fraction*self.tFitMax)
         return self.y[self.x<fraction*self.tFitMax]
 
-    def GetMeanNoise(self):
+    def GetMeanNoise(self, minnoise=1E-5):
         all_noise=self.GetNoiseList()
         #print(all_noise)
         if len(all_noise)<=1:
-            n=1E-20
+            n=minnoise
         else:
             n=np.mean(nparr(all_noise))
         return n
@@ -643,13 +642,13 @@ class ScopeSignalSlow:
             n=np.std(noise)/np.sqrt(len(noise))
         return n
 
-    def GetStdNoise(self):
+    def GetStdNoise(self, minstd=1E-5):
         noise=nparr(self.GetNoiseList())
         if len(noise)<=1:
-            std=1E-20
+            std=minstd
         else:
             std=np.std(noise)
-        if std==0.: std=1E-20
+        if std==0.: std=minstd
         return std
 
     def GetNoiseHisto(self):

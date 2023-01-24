@@ -309,7 +309,7 @@ timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
 hist(timeDIFF, "time difference NO CUT",channels=500)
 
 xmDUT, ymDUT, xmREF, ymREF=np.mean(dfDUT["X"]),np.mean(dfDUT["Y"]),np.mean(dfREF["X"]),np.mean(dfREF["Y"])
-draw_cut=4#mm radius from the center both the detector!
+draw_cut=2#mm radius from the center both the detector!
 
 drop_indexDUT,drop_indexREF=[],[]
 drop_index=dfDUT[dfDUT["radius"] > draw_cut].index
@@ -331,6 +331,7 @@ TimeCut=0.3E-9
 timeDiffSel, TDmin, TDmax=[], np.median(timeDIFF)-3*TimeCut, np.median(timeDIFF)+3*TimeCut
 for td in timeDIFF:
     #print(td,TDmax,TDmin)
-    if td>=TDmin and TDmax<=TDmax:
+    if td>=TDmin and td<=TDmax:
         timeDiffSel.append(td)
 timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=100,write=True)
+
