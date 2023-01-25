@@ -272,8 +272,10 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         if args.draw=="1" and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
+            wf.DerivSignal(signalDUT).WaveSave(EpeakLines=True,Write=True,Zoom=True)
             main.cd("RawWaveforms/REF/Signal")
             signalREF.WaveSave(EpeakLines=True,Write=True,Zoom=True)
+            wf.DerivSignal(signalREF).WaveSave(EpeakLines=True,Write=True,Zoom=True)
         #check if signal is bad
         if signalDUT.badSignalFlag==True:
             badDUT.append(i)
