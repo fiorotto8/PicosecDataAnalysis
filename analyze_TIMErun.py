@@ -188,6 +188,7 @@ parser.add_argument('-s','--selFiles',help='limit in the number of files to anal
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
 parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
+parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default="0")
 
 args = parser.parse_args()
 
@@ -267,15 +268,19 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=0.5E-9,sigma=5,fit=True)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=0.1E-9,sigma=5,fit=True)
-        if args.draw=="1" and signalDUT.badSignalFlag==False:
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=0.5E-9,sigma=5,fit=True, badDebug=args.debugBad)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=0.1E-9,sigma=5,fit=True, UseDeriv=False, badDebug=args.debugBad)
+        if args.draw=="1":# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
-            wf.DerivSignal(signalDUT).WaveSave(EpeakLines=True,Write=True,Zoom=True)
+            #wf.DerivSignal(signalDUT).WaveSave(EpeakLines=True,Write=True,Zoom=True)
             main.cd("RawWaveforms/REF/Signal")
             signalREF.WaveSave(EpeakLines=True,Write=True,Zoom=True)
-            wf.DerivSignal(signalREF).WaveSave(EpeakLines=True,Write=True,Zoom=True)
+            #fit
+            main.cd("RawWaveforms/DUT/Fit")
+            signalDUT.SigmoidFit(write=True)
+            main.cd("RawWaveforms/REF/Fit")
+            signalREF.SigmoidFit(write=True)
         #check if signal is bad
         if signalDUT.badSignalFlag==True:
             badDUT.append(i)
@@ -283,14 +288,23 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         elif signalREF.badSignalFlag==True:
             badREF.append(i)
             continue
-        else:
-            dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat])
-            dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat])
-            if args.draw=="1" and signalDUT.badSignalFlag==False:
-                main.cd("RawWaveforms/DUT/Fit")
-                signalDUT.SigmoidFit(write=True)
-                main.cd("RawWaveforms/REF/Fit")
-                signalREF.SigmoidFit(write=True)
+        #else:
+        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat])
+        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat])
+        """
+        if args.draw=="1":# and signalDUT.badSignalFlag==False:
+            print(i)
+            main.cd("RawWaveforms/DUT/Fit")
+            signalDUT.SigmoidFit(write=True)
+            main.cd("RawWaveforms/REF/Fit")
+            signalREF.SigmoidFit(write=True)
+        """
+print("Fraction of NOTRECO bad events:",len(notReco)/len(wavesDUT))
+print("Fraction of DUT bad events:",len(badDUT)/(len(wavesDUT)-len(notReco)))
+print("Fraction of REF bad events:",len(badREF)/(len(wavesDUT)-len(notReco)))
+#print(notReco)
+#print(badDUT)
+#print(badREF)
 
 cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"]
 
@@ -307,15 +321,16 @@ dfREF=dfREF.assign(radius=rREF,angle=thetaREF)
 
 plotsDF(dfDUT,"DUT NO CUT")
 plotsDF(dfREF,"REF NO CUT")
+
 timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
 hist(timeDIFF, "time difference NO CUT",channels=500)
 
 xmDUT, ymDUT, xmREF, ymREF=np.mean(dfDUT["X"]),np.mean(dfDUT["Y"]),np.mean(dfREF["X"]),np.mean(dfREF["Y"])
-draw_cut=2#mm radius from the center both the detector!
+geo_cut=2#mm radius from the center both the detector!
 
 drop_indexDUT,drop_indexREF=[],[]
-drop_index=dfDUT[dfDUT["radius"] > draw_cut].index
-drop_index.union(dfDUT[dfREF["radius"] > draw_cut].index)
+drop_index=dfDUT[dfDUT["radius"] > geo_cut].index
+drop_index.union(dfDUT[dfREF["radius"] > geo_cut].index)
 #drop_indexREF=dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index
 eventDrawCut=1-len(drop_index)/(len(dfDUT["X"]))
 print("Survival after GEO cut:",eventDrawCut)
@@ -335,5 +350,5 @@ for td in timeDIFF:
     #print(td,TDmax,TDmin)
     if td>=TDmin and td<=TDmax:
         timeDiffSel.append(td)
-timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=100,write=True)
+timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=1000,write=True)
 

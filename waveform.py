@@ -155,7 +155,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2, sigma=5, risetimeCut=1E-9,fit=False,satcut=[0.218E-6,0.231E-6]):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=1E-9,fit=False,satcut=[0,0.3E-6], UseDeriv=True, badDebug="0"):
         self.badSignalFlag = False
 
         self.name = name
@@ -185,16 +185,23 @@ class ScopeSignalCividec:
         self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
         if self.SigmaOutNoise<sigma:
             self.badSignalFlag = True
+            if badDebug=="1":
+                print("bad from sigmaOutNoise")
         self.y=self.y-self.baseLine #baseline correction
         #get again the peak (probably not needed)
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
 
         self.Epeakmin, self.EpeakminIdx=self.GetEpeakMin()
         self.tFitMin=self.x[self.EpeakminIdx]
-        self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax_fromDerivative()
+        if UseDeriv==True:
+            self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax_fromDerivative()
+        else:
+            self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax(sigma=sigma_thr)
         self.risetime= self.RiseTimeData()
         if self.risetime<risetimeCut:
             self.badSignalFlag = True
+            if badDebug=="1":
+                print("bad from risetimeCut")
 
         self.Integral=(np.sum(self.y)/self.AmplifierGain)*(self.scopeImpedence*self.sampling)
         self.EpeakCharge, self.Gain=self.GetGain()
@@ -206,6 +213,8 @@ class ScopeSignalCividec:
             #sigma<=Delay/(ln(1/fraction))
             if self.sat<=satcut[0] or self.sat>=satcut[1] or m.isnan(self.sat):
                 self.badSignalFlag = True
+                if badDebug=="1":
+                    print("bad from satCut")
 
     def isBad(self):
         self.badSignalFlag = True
@@ -352,6 +361,30 @@ class ScopeSignalCividec:
         if x_peak==0:
             self.isBad()
         return [x_peak,len(sub_y)-i]
+
+    def GetEpeakMax(self, sigma=2):
+            """
+            return the time of the stop of the electron peak
+            with discrimator
+            """
+            min=self.Ampmin
+            tFitMax=self.tFitMax
+            offseti=len(self.y[self.x<=tFitMax])
+            sub_y=self.y[self.x>tFitMax]
+            sub_x=self.x[self.x>tFitMax]
+            std=self.baseLineStd
+            x_peak = 0
+            i=0
+            for i in range(len((sub_y))):
+                if np.abs(sub_y[i])<(sigma*std):
+                    x_peak=sub_x[i]
+                    break
+                else:
+                    continue
+            if x_peak==0:
+                self.isBad()
+            #print(x_peak,self.x[offseti+i])
+            return [x_peak,offseti+i]
 
     def GetEpeakMax_fromDerivative(self,window=20):
         """
