@@ -19,6 +19,28 @@ this is made in the function and is not using the methods Average() and Derivati
 """
 
 
+def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1):
+        plot = ROOT.TGraphErrors(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d") , np.array(   ex   ,dtype="d"),np.array( ey   ,dtype="d"))
+        plot.SetNameTitle(y_string+" vs "+x_string,y_string+" vs "+x_string)
+        plot.GetXaxis().SetTitle(x_string)
+        plot.GetYaxis().SetTitle(y_string)
+        plot.SetMarkerColor(color)#blue
+        plot.SetMarkerStyle(markerstyle)
+        plot.SetMarkerSize(markersize)
+        plot.Write()
+        return plot
+
+def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
+        plot = ROOT.TGraph(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d"))
+        plot.SetNameTitle(y_string+" vs "+x_string,y_string+" vs "+x_string)
+        plot.GetXaxis().SetTitle(x_string)
+        plot.GetYaxis().SetTitle(y_string)
+        plot.SetMarkerColor(color)#blue
+        plot.SetMarkerStyle(markerstyle)
+        plot.SetMarkerSize(markersize)
+        plot.Write()
+        return plot
+
 def fill_h(histo_name, array):
     for x in range (len(array)):
         histo_name.Fill((np.array(array[x] ,dtype="d")))
@@ -1190,7 +1212,100 @@ class ChargeDistr():
 
         return [polyaTF1.GetParameter(0),polyaTF1.GetParameter(1),polyaTF1.GetParError(1),polyaTF1.GetParameter(1)/(1+polyaTF1.GetParameter(2)), polyaTF1.GetChisquare()/polyaTF1.GetNDF()]
 
+class DiscriminatorScaler():
+    """
+    baseline from all the sample!
+    """
+    def __init__(self, x, y, name, sampling=1E10, deadtime=0.2E-6, thresold=6):
+        self.name = name
+        self.x=nparr(x)
+        self.leng=len(x)
+        self.y=nparr(y)
+        self.dead_points=sampling*deadtime
+        self.sampling=sampling
+        self.baseline, self.std=np.mean(self.y),np.std(self.y)
+        self.min=np.min(self.y)
+        self.max=np.max(self.y)
+        self.threshold=-1*thresold*self.std
 
+    def GetHist(self, linecolor=4, linewidth=4, channels=1E5,write=False):
+        hist=ROOT.TH1D("voltage distribution","voltage distribution",channels,0.99*self.min,1.01*self.max)
+        fill_h(hist,self.y)
+        hist.SetLineColor(linecolor)
+        hist.SetLineWidth(linewidth)
+        hist.GetXaxis().SetTitle("Voltages")
+        hist.GetYaxis().SetTitle("Entries")
+        hist.GetYaxis().SetMaxDigits(3);
+        hist.GetXaxis().SetMaxDigits(3);
+        if write==True: hist.Write()
+        return hist
+
+    def GetGraph(self, color=4, markerstyle=22, markersize=1, write=False):
+        plot = ROOT.TGraph(len(self.x),  self.x, self.y)
+        plot.SetNameTitle("Voltage vs time","Voltage vs time")
+        plot.GetXaxis().SetTitle("Time(s)")
+        plot.GetYaxis().SetTitle("Voltage(V)")
+        plot.SetMarkerColor(color)#blue
+        plot.SetMarkerStyle(markerstyle)
+        plot.SetMarkerSize(markersize)
+        if write==True: plot.Write()
+        return plot
+
+    def GetCounts(self):
+        counter, index, timesIdx, amplitudes=0, 0, [], []
+        while index<self.leng:
+            if self.y[int(index)]<self.baseline+self.threshold:
+            #if self.y[int(index)]<-19E-3:
+                #print(index)
+                timesIdx.append(index)
+                amplitudes.append(np.min(self.y[int(index):int(index+self.dead_points)]))
+                index=index+self.dead_points+1
+                counter=counter+1
+            else:
+                index=index+1
+        return [counter, amplitudes, timesIdx]
+
+    def PlotDiscrim(self,timesIdx, size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False, save=False):
+        plot=self.GetGraph(write=Write)
+        y_name=plot.GetYaxis().GetTitle()
+        x_name=plot.GetXaxis().GetTitle()
+        can1=ROOT.TCanvas(self.name, self.name, size, size)
+        can1.SetFillColor(0);
+        can1.SetBorderMode(0);
+        can1.SetBorderSize(2);
+        can1.SetLeftMargin(leftmargin);
+        can1.SetRightMargin(rightmargin);
+        can1.SetTopMargin(0.1);
+        can1.SetBottomMargin(0.1);
+        can1.SetFrameBorderMode(0);
+        can1.SetFrameBorderMode(0);
+        can1.SetFixedAspectRatio();
+        plot.Draw("AP")
+        if Lines==True:
+            can1.Update()
+            ymax=ROOT.gPad.GetUymax()
+            ymin=ROOT.gPad.GetUymin()
+            xmax=ROOT.gPad.GetUxmax()
+            xmin=ROOT.gPad.GetUxmin()
+            line=ROOT.TLine(xmin,self.threshold,xmax,self.threshold)
+            line.SetLineColor(4)
+            line.SetLineWidth(2)
+            line.Draw("SAME")
+            for i, idx in enumerate(timesIdx):
+                exec("line"+str(i)+"=ROOT.TLine(self.x["+str(int(idx))+"],ymin,self.x["+str(int(idx))+"],ymax)")
+                exec("line"+str(i)+".SetLineColor(2)")
+                exec("line"+str(i)+".SetLineWidth(1)")
+                exec("line"+str(i)+".Draw('SAME')")
+        if Write==True: can1.Write()
+        if save==True: can1.SaveAs("plot.png")
+        return can1
+
+    def IntervalPlot(self, times):
+        intervals=[]
+        for i in range(len(times)-1):
+            intervals.append(times[i+1]-times[i])
+        hist(intervals, "Distribution of time intervals", channels=10)
+        return intervals
 
 
 
