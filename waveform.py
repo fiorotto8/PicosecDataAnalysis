@@ -1216,11 +1216,16 @@ class DiscriminatorScaler():
     """
     baseline from all the sample!
     """
-    def __init__(self, x, y, name, sampling=1E10, deadtime=0.2E-6, thresold=6):
+    def __init__(self, x, y, name, sampling=1E10, deadtime=5E-9, thresold=5, smoothing=None):
         self.name = name
         self.x=nparr(x)
-        self.leng=len(x)
-        self.y=nparr(y)
+        self.leng=len(self.x)
+        y=nparr(y)
+        if smoothing is not None:
+            kernel = np.ones(smoothing) / smoothing
+            self.y= np.convolve(y, kernel, mode='same')
+        else:
+            self.y=y
         self.dead_points=sampling*deadtime
         self.sampling=sampling
         self.baseline, self.std=np.mean(self.y),np.std(self.y)
@@ -1240,7 +1245,7 @@ class DiscriminatorScaler():
         if write==True: hist.Write()
         return hist
 
-    def GetGraph(self, color=4, markerstyle=22, markersize=1, write=False):
+    def GetGraph(self, color=4, markerstyle=22, markersize=1, write=True):
         plot = ROOT.TGraph(len(self.x),  self.x, self.y)
         plot.SetNameTitle("Voltage vs time","Voltage vs time")
         plot.GetXaxis().SetTitle("Time(s)")
@@ -1251,21 +1256,91 @@ class DiscriminatorScaler():
         if write==True: plot.Write()
         return plot
 
-    def GetCounts(self):
-        counter, index, timesIdx, amplitudes=0, 0, [], []
+    def GetCountsAmps(self, risetimeCut=[0.0001E-9,20E-9], debugPlot=False):
+        #for every discrimated wave (with self.threshold and self.dead_points gate) return the max amplitude and the risetimes
+        counter, index, timesIdxstart,timesIdxstop, amplitudes, risetimes=0, 0, [], [], [], []
         while index<self.leng:
-            if self.y[int(index)]<self.baseline+self.threshold:
-            #if self.y[int(index)]<-19E-3:
-                #print(index)
-                timesIdx.append(index)
+            if self.y[int(index)]<(self.baseline+self.threshold):
+                #print(self.y[int(index)], (self.baseline+self.threshold))
+                #get index start and stop
+                trg_index=index
+                max_index=index+np.argmin(self.y[int(index):int(index+self.dead_points)])
+                #print(trg_index, max_index)
+                risetemp=(max_index-trg_index)/self.sampling
+
+                #if risetemp>=risetimeCut[0] and risetemp<risetimeCut[1]:
+                timesIdxstart.append(trg_index)
+                timesIdxstop.append(max_index)
+                #compute risetime and amplitude
+                risetimes.append((max_index-trg_index)/self.sampling)
                 amplitudes.append(np.min(self.y[int(index):int(index+self.dead_points)]))
                 index=index+self.dead_points+1
                 counter=counter+1
+                if debugPlot==True: self.SaveGraphCounter(int(trg_index), int(max_index),(max_index-trg_index)/self.sampling , Write=True)
+                #else:
+                #    index=index+1
+
             else:
                 index=index+1
-        return [counter, amplitudes, timesIdx]
+        return [counter, amplitudes, timesIdxstart, timesIdxstop, risetimes]
 
-    def PlotDiscrim(self,timesIdx, size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False, save=False):
+    def GetFFT(self):
+        t,y = self.x, self.y
+        timestep = 1/self.sampling
+        yf = fftpack.fft(y)
+        xf = fftpack.fftfreq(self.leng, d=timestep)
+        return xf, yf
+
+    def GetPowerSpectrum(self, fcut=None):
+        xf, yfft = self.GetFFT()
+        xf, yf = xf[xf>0], np.log10(np.abs(yfft)**2)[xf>0]
+        if fcut is not None: xf, yf = xf[xf<fcut], yf[xf<fcut]
+        return xf, yf
+
+    def FreqFilter(self, freqmin=None, freqmax=None):
+        sample_freq, sig_fft = self.GetFFT()
+        filtered_freq = sig_fft.copy()
+        if freqmax is not None: filtered_freq[np.abs(sample_freq) > freqmax] = 0
+        if freqmin is not None: filtered_freq[np.abs(sample_freq) < freqmin] = 0
+        filtered_sig = fftpack.ifft(filtered_freq)
+        return self.x, filtered_sig
+
+    """
+    def GetCountsAmps(self,threshold=2, gate=10E-9, debugPlot=True):
+        #moving baseline
+        counter, index, timesIdxstart,timesIdxstop, amplitudes, risetimes=0, 0, [], [], [], []
+        scout_baseline=100
+        index=scout_baseline#start from point
+        while index<self.leng:
+            #get running baseline
+            subY=self.y[int(index-scout_baseline):int(index)]
+            Baseline=np.mean(subY)
+            stdBaseline=np.std(subY)
+            level=Baseline-threshold*stdBaseline
+            #check if out baseline
+            if self.y[int(index)]<=level:
+                #get index start and stop
+                trg_index=index
+                max_index=index+np.argmin(self.y[int(index):int(index+(gate*self.sampling))])
+                #print(trg_index, max_index)
+                risetemp=(max_index-trg_index)/self.sampling
+                #for now ok.........
+                timesIdxstart.append(trg_index)
+                timesIdxstop.append(max_index)
+                #compute risetime and amplitude
+                risetimes.append(risetemp)
+                amplitudes.append(np.min(self.y[int(index):int(index+(gate*self.sampling))]))
+                index=index+(gate*self.sampling)+1
+                counter=counter+1
+                if debugPlot==True: self.SaveGraphCounter(int(trg_index), int(max_index),(max_index-trg_index)/self.sampling , Write=True)
+
+            else:
+                index=index+1
+
+        return [counter, amplitudes, timesIdxstart, timesIdxstop, risetimes]
+    """
+
+    def PlotDiscrim(self,timesIdx, name=None, size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False, save=False):
         plot=self.GetGraph(write=Write)
         y_name=plot.GetYaxis().GetTitle()
         x_name=plot.GetXaxis().GetTitle()
@@ -1287,7 +1362,7 @@ class DiscriminatorScaler():
             ymin=ROOT.gPad.GetUymin()
             xmax=ROOT.gPad.GetUxmax()
             xmin=ROOT.gPad.GetUxmin()
-            line=ROOT.TLine(xmin,self.threshold,xmax,self.threshold)
+            line=ROOT.TLine(xmin,self.baseline+self.threshold,xmax,self.baseline+self.threshold)
             line.SetLineColor(4)
             line.SetLineWidth(2)
             line.Draw("SAME")
@@ -1297,7 +1372,9 @@ class DiscriminatorScaler():
                 exec("line"+str(i)+".SetLineWidth(1)")
                 exec("line"+str(i)+".Draw('SAME')")
         if Write==True: can1.Write()
-        if save==True: can1.SaveAs("plot.png")
+        if save==True:
+            if name is None: can1.SaveAs("plot.png")
+            else: can1.SaveAs(str(name)+".png")
         return can1
 
     def IntervalPlot(self, times):
@@ -1307,25 +1384,38 @@ class DiscriminatorScaler():
         hist(intervals, "Distribution of time intervals", channels=10)
         return intervals
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
+    def SaveGraphCounter(self, start, stop, risetime, size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False):
+        plot_delay=100
+        plot=graph(self.x[int(start)-plot_delay:int(stop)+plot_delay],self.y[int(start)-plot_delay:int(stop)+plot_delay],"time(s)", "voltage(V)", write=False)
+        y_name=plot.GetYaxis().GetTitle()
+        x_name=plot.GetXaxis().GetTitle()
+        can1=ROOT.TCanvas(y_name+" vs "+x_name, y_name+" vs "+x_name, size, size)
+        can1.SetFillColor(0);
+        can1.SetBorderMode(0);
+        can1.SetBorderSize(2);
+        can1.SetLeftMargin(leftmargin);
+        can1.SetRightMargin(rightmargin);
+        can1.SetTopMargin(0.1);
+        can1.SetBottomMargin(0.1);
+        can1.SetFrameBorderMode(0);
+        can1.SetFrameBorderMode(0);
+        can1.SetFixedAspectRatio();
+        plot.Draw("AP")
+        if Lines==True:
+            can1.Update()
+            ymax=ROOT.gPad.GetUymax()
+            ymin=ROOT.gPad.GetUymin()
+            line1=ROOT.TLine(self.x[start],ymin,self.x[start],ymax)
+            line1.SetLineColor(2)
+            line1.SetLineWidth(2)
+            line1.Draw("SAME")
+            line2=ROOT.TLine(self.x[stop],ymin,self.x[stop],ymax)
+            line2.SetLineColor(2)
+            line2.SetLineWidth(2)
+            line2.Draw("SAME")
+            p=ROOT.TPaveText(.5,.8,.9,.9,"NDC")
+            p.AddText("risetime(s): "+ str(risetime))
+            p.SetFillStyle(0);
+            p.Draw("SAME")
+        if Write==True: can1.Write()
+        return can1
