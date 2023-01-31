@@ -1216,7 +1216,7 @@ class DiscriminatorScaler():
     """
     baseline from all the sample!
     """
-    def __init__(self, x, y, name, sampling=1E10, deadtime=5E-9, thresold=5, smoothing=None):
+    def __init__(self, x, y, name, sampling=1E10, deadtime=200E-9, thresold=5, smoothing=None):
         self.name = name
         self.x=nparr(x)
         self.leng=len(self.x)
@@ -1256,7 +1256,7 @@ class DiscriminatorScaler():
         if write==True: plot.Write()
         return plot
 
-    def GetCountsAmps(self, risetimeCut=[0.0001E-9,20E-9], debugPlot=False):
+    def GetCountsAmps(self, risetimeCut=[0.05E-9,5E-9], debugPlot=False):
         #for every discrimated wave (with self.threshold and self.dead_points gate) return the max amplitude and the risetimes
         counter, index, timesIdxstart,timesIdxstop, amplitudes, risetimes=0, 0, [], [], [], []
         while index<self.leng:
@@ -1268,17 +1268,17 @@ class DiscriminatorScaler():
                 #print(trg_index, max_index)
                 risetemp=(max_index-trg_index)/self.sampling
 
-                #if risetemp>=risetimeCut[0] and risetemp<risetimeCut[1]:
-                timesIdxstart.append(trg_index)
-                timesIdxstop.append(max_index)
-                #compute risetime and amplitude
-                risetimes.append((max_index-trg_index)/self.sampling)
-                amplitudes.append(np.min(self.y[int(index):int(index+self.dead_points)]))
-                index=index+self.dead_points+1
-                counter=counter+1
-                if debugPlot==True: self.SaveGraphCounter(int(trg_index), int(max_index),(max_index-trg_index)/self.sampling , Write=True)
-                #else:
-                #    index=index+1
+                if risetemp>=risetimeCut[0] and risetemp<risetimeCut[1]:
+                    timesIdxstart.append(trg_index)
+                    timesIdxstop.append(max_index)
+                    #compute risetime and amplitude
+                    risetimes.append(risetemp)
+                    amplitudes.append(np.min(self.y[int(index):int(index+self.dead_points)]))
+                    index=index+self.dead_points+1
+                    counter=counter+1
+                    if debugPlot==True: self.SaveGraphCounter(int(trg_index), int(max_index),(max_index-trg_index)/self.sampling , Write=True)
+                else:
+                    index=index+1
 
             else:
                 index=index+1
