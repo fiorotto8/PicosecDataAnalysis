@@ -1216,7 +1216,7 @@ class DiscriminatorScaler():
     """
     baseline from all the sample!
     """
-    def __init__(self, x, y, name, sampling=1E10, deadtime=200E-9, thresold=5, smoothing=None):
+    def __init__(self, x, y, name, sampling=1E10, deadtime=50E-9, thresold=-2.4E-3, thresSigma=None, smoothing=None):
         self.name = name
         self.x=nparr(x)
         self.leng=len(self.x)
@@ -1231,7 +1231,9 @@ class DiscriminatorScaler():
         self.baseline, self.std=np.mean(self.y),np.std(self.y)
         self.min=np.min(self.y)
         self.max=np.max(self.y)
-        self.threshold=-1*thresold*self.std
+        if thresSigma is not None and thresold is None: self.threshold=-1*thresSigma*self.std
+        elif thresold is not None and thresSigma is None: self.threshold=thresold
+        else: raise Exception("Both threshold are ON or both are None")
 
     def GetHist(self, linecolor=4, linewidth=4, channels=1E5,write=False):
         hist=ROOT.TH1D("voltage distribution","voltage distribution",channels,0.99*self.min,1.01*self.max)
@@ -1256,7 +1258,7 @@ class DiscriminatorScaler():
         if write==True: plot.Write()
         return plot
 
-    def GetCountsAmps(self, risetimeCut=[0.05E-9,5E-9], debugPlot=False):
+    def GetCountsAmps(self, risetimeCut=[0.25E-9,2.5E-9], debugPlot=False):
         #for every discrimated wave (with self.threshold and self.dead_points gate) return the max amplitude and the risetimes
         counter, index, timesIdxstart,timesIdxstop, amplitudes, risetimes=0, 0, [], [], [], []
         while index<self.leng:
@@ -1340,10 +1342,10 @@ class DiscriminatorScaler():
         return [counter, amplitudes, timesIdxstart, timesIdxstop, risetimes]
     """
 
-    def PlotDiscrim(self,timesIdx, name=None, size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False, save=False):
-        plot=self.GetGraph(write=Write)
-        y_name=plot.GetYaxis().GetTitle()
-        x_name=plot.GetXaxis().GetTitle()
+    def PlotDiscrim(self,timesIdx, name=None, size=600, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False, save=False):
+        plot=self.GetGraph(write=False)
+        #y_name=plot.GetYaxis().GetTitle()
+        #x_name=plot.GetXaxis().GetTitle()
         can1=ROOT.TCanvas(self.name, self.name, size, size)
         can1.SetFillColor(0);
         can1.SetBorderMode(0);
@@ -1384,9 +1386,12 @@ class DiscriminatorScaler():
         hist(intervals, "Distribution of time intervals", channels=10)
         return intervals
 
-    def SaveGraphCounter(self, start, stop, risetime, size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False):
-        plot_delay=100
-        plot=graph(self.x[int(start)-plot_delay:int(stop)+plot_delay],self.y[int(start)-plot_delay:int(stop)+plot_delay],"time(s)", "voltage(V)", write=False)
+    def SaveGraphCounter(self, start, stop, risetime,plot_delay=1000 , size=800, leftmargin=0.17, rightmargin=0.1, Lines=True,Write=False):
+        if int(start)-int(plot_delay*0.1)<0: off_start=0
+        else: off_start=int(start)-int(plot_delay*0.1)
+        if int(stop)+plot_delay>self.leng: off_stop=self.leng
+        else: off_stop=int(stop)+plot_delay
+        plot=graph(self.x[off_start:off_stop],self.y[off_start:off_stop],"time(s)", "voltage(V)", write=False)
         y_name=plot.GetYaxis().GetTitle()
         x_name=plot.GetXaxis().GetTitle()
         can1=ROOT.TCanvas(y_name+" vs "+x_name, y_name+" vs "+x_name, size, size)
