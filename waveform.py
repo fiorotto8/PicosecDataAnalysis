@@ -176,7 +176,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name,thresPosStd=2E-3, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=[0.3E-9, 5E-9],fit=False,satcut=[100E-9,140E-9], UseDeriv=True, badDebug="0"):
+    def __init__(self, x, y, name,thresPosStd=1, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=None,fit=False,satcut=None, UseDeriv=True, badDebug="0"):
         self.badSignalFlag = False
 
         self.name = name
@@ -231,7 +231,8 @@ class ScopeSignalCividec:
         else:
             self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax(sigma=sigma_thr)
         self.risetime= self.RiseTimeData()
-        if self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]:
+
+        if risetimeCut is not None and (self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]):
             self.badSignalFlag = True
             if badDebug=="1":
                 print("bad from risetimeCut")
@@ -244,11 +245,14 @@ class ScopeSignalCividec:
             #if nan is returned the CFD is out of domain
             #DOMAIN IS:
             #sigma<=Delay/(ln(1/fraction))
-            if self.sat<satcut[0] or self.sat>satcut[1] or m.isnan(self.sat):
+            if m.isnan(self.sat):
+                self.badSignalFlag = True
+                if badDebug=="1":
+                    print("bad beacuse of NaN in SAT")
+            if satcut is not None and (self.sat<satcut[0] or self.sat>satcut[1]):
                 self.badSignalFlag = True
                 if badDebug=="1":
                     print("bad from satCut")
-
 
     def isBad(self):
         self.badSignalFlag = True

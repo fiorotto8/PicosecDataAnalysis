@@ -197,6 +197,7 @@ run_num=args.run
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
 #check the active channels
+print(run_path)
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
 active_channels=[0,0,0,0]
@@ -246,6 +247,7 @@ for i in tqdm.tqdm(range(len(files_DUT[:num]))):
 # 5-->sigma
 # 6-->risetime
 # 7-->SAT
+# 8-->PosStd
 """
 dataDUT, dataREF, notReco,badDUT, badREF=[],[],[],[],[]
 
@@ -268,8 +270,8 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=0.5E-9,sigma=5,fit=True, badDebug=args.debugBad)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=0.1E-9,sigma=5,fit=True, UseDeriv=False, badDebug=args.debugBad)
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=[0.5E-9,2.5E-9],sigma=5,fit=True, badDebug=args.debugBad)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=[0.1E-9,2.5E-9],sigma=5,fit=True, UseDeriv=False, badDebug=args.debugBad)
         if args.draw=="1":# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
@@ -289,8 +291,8 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             badREF.append(i)
             continue
         #else:
-        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat])
-        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat])
+        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat, signalDUT.PosStd])
+        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat, signalREF.PosStd])
         """
         if args.draw=="1":# and signalDUT.badSignalFlag==False:
             print(i)
@@ -306,7 +308,7 @@ print("Fraction of REF bad events:",len(badREF)/(len(wavesDUT)-len(notReco)))
 #print(badDUT)
 #print(badREF)
 
-cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT"]
+cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
 
 #create dataframe and plot results
 main.mkdir("NO CUT PLOT")
