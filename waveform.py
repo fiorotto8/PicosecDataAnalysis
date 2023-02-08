@@ -176,7 +176,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name,thresPosStd=1, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=None,fit=False,satcut=None, UseDeriv=True, badDebug="0"):
+    def __init__(self, x, y, name,thresPosStd=None, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=None,fit=False,satcut=None, UseDeriv=True, badDebug="0"):
         self.badSignalFlag = False
 
         self.name = name
@@ -215,7 +215,7 @@ class ScopeSignalCividec:
             self.PosStd=2*thresPosStd
         else:
             self.PosStd=np.std(PosPoints)
-        if self.PosStd>=thresPosStd:
+        if thresPosStd is not None and self.PosStd>=thresPosStd:
             self.badSignalFlag = True
             if badDebug=="1":
                 print("bad from PositiveStd")
