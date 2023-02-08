@@ -18,7 +18,6 @@ to get the maxmiumo fht eelctron peak derivative and average in made to get the 
 this is made in the function and is not using the methods Average() and Derivative()
 """
 
-
 def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot = ROOT.TGraphErrors(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d") , np.array(   ex   ,dtype="d"),np.array( ey   ,dtype="d"))
         plot.SetNameTitle(y_string+" vs "+x_string,y_string+" vs "+x_string)
@@ -177,7 +176,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=1E-9,fit=False,satcut=[0,0.3E-6], UseDeriv=True, badDebug="0"):
+    def __init__(self, x, y, name,thresPosStd=2E-3, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=[0.3E-9, 5E-9],fit=False,satcut=[100E-9,140E-9], UseDeriv=True, badDebug="0"):
         self.badSignalFlag = False
 
         self.name = name
@@ -209,6 +208,18 @@ class ScopeSignalCividec:
             self.badSignalFlag = True
             if badDebug=="1":
                 print("bad from sigmaOutNoise")
+
+        #check if flicker noise is present
+        PosPoints=[p for p in self.y[self.y>0]]
+        if len(PosPoints)<1:
+            self.PosStd=2*thresPosStd
+        else:
+            self.PosStd=np.std(PosPoints)
+        if self.PosStd>=thresPosStd:
+            self.badSignalFlag = True
+            if badDebug=="1":
+                print("bad from PositiveStd")
+
         self.y=self.y-self.baseLine #baseline correction
         #get again the peak (probably not needed)
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
@@ -220,7 +231,7 @@ class ScopeSignalCividec:
         else:
             self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax(sigma=sigma_thr)
         self.risetime= self.RiseTimeData()
-        if self.risetime<risetimeCut:
+        if self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]:
             self.badSignalFlag = True
             if badDebug=="1":
                 print("bad from risetimeCut")
@@ -233,10 +244,11 @@ class ScopeSignalCividec:
             #if nan is returned the CFD is out of domain
             #DOMAIN IS:
             #sigma<=Delay/(ln(1/fraction))
-            if self.sat<=satcut[0] or self.sat>=satcut[1] or m.isnan(self.sat):
+            if self.sat<satcut[0] or self.sat>satcut[1] or m.isnan(self.sat):
                 self.badSignalFlag = True
                 if badDebug=="1":
                     print("bad from satCut")
+
 
     def isBad(self):
         self.badSignalFlag = True
@@ -263,7 +275,7 @@ class ScopeSignalCividec:
         if write==True: plot.Write()
         return plot
 
-    def WaveSave(self, size=800, leftmargin=0.17, rightmargin=0.1, EpeakLines=False,Write=False,Zoom=False, Save=False):
+    def WaveSave(self, size=500, leftmargin=0.17, rightmargin=0.1, EpeakLines=False,Write=False,Zoom=False, Save=False):
         plot=self.WaveGraph()
         y_name=plot.GetYaxis().GetTitle()
         x_name=plot.GetXaxis().GetTitle()
@@ -313,7 +325,7 @@ class ScopeSignalCividec:
 
             p.Draw("SAME")
         if Write==True: can1.Write()
-        if Save==True: can1.SaveAs(self.name+".png")
+        if Save==True: can1.SaveAs("./signals/"+self.name+".png")
         return can1
 
     def GetAmplitudeMin(self):
@@ -443,6 +455,7 @@ class ScopeSignalCividec:
         y=np.gradient(self.y, edge_order)
         return ScopeSignal(self.x, y, "Derivative_"+self.name)
     """
+
     def SigmoidFit(self,mult1=4, mult2=2,test=False,write=False,LeftPoints=50,RightPoints=2):
         start0=self.Ampmin
         start1=self.risetime/mult1
@@ -481,12 +494,10 @@ class ScopeSignalCividec:
         inverse.SetParameters(FitFunc.GetParameter(0),FitFunc.GetParameter(1),FitFunc.GetParameter(2))
         return inverse
 
-
     def ArrivalTimeLEFit(self, threshold=0.2):
         inverse=self.GetInverseSigmoid()
         thr=threshold*inverse.GetParameter(0)
         return inverse.Eval(thr)
-
 
     def GetSignalCFDSignal(self, fr=0.2,dele=0.5E-9):
         indexDelay = int(dele/self.sampling)
