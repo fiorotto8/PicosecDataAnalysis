@@ -109,15 +109,14 @@ def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
         return plot
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
-parser.add_argument('-tp','--trackerpath',help='path contiaining the tracker data', action='store', default="./tracker/")
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
 parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
-parser.add_argument('-c','--channel',help='chennel to analyze defaut=2', action='store', default="2")
+parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="1")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
-parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
+parser.add_argument('-w','--writecsv',help='Any value will disable the csv results writing', action='store', default=None)
 args = parser.parse_args()
 
 #get the run number from path
@@ -203,9 +202,7 @@ if len(sigma)!=0:
 #with the slow amplifier the charge is not exactly the charge beacuse
 #the amplifier Gain is not exacly know (well we can calibrate it)
 #However, to measure PE/MIP we do the ratio between mean charges so
-#it is just an offset
-charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=1000,bin="lin")
-amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
+#it is jargs.writChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 
 if args.polya=="1":
     a=charge.ComplexPolya(path=result_path)
@@ -215,7 +212,7 @@ else:
     b=amps.PolyaFit(save=True, path=result_path)
 print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
-if args.writecsv=="1":
+if args.writecsv is None:
     f = open(base_path+"resultsPE.csv", "a")
     #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")

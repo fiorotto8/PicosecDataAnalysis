@@ -1,5 +1,5 @@
-base_path="../TestBeams/October2022/"
+base_path="/media/bavia/Dati/RunTB_October2022/October2022/"
 scope="Pool2/"
 run_path=base_path+"Runs/"+scope+"Run"
-result_path=base_path+"Results/Run"
+result_path="../TestBeamResults/October_2022/Run"
 trk_path=base_path+"tracker/"
