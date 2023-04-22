@@ -110,17 +110,22 @@ def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
-parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
+#parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
+parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default='None')
 parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
 parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="1")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
-parser.add_argument('-w','--writecsv',help='Any value will disable the csv results writing', action='store', default=None)
+parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing', action='store', default=None)
 args = parser.parse_args()
 
 #get the run number from path
 run_num=args.run
+
+if run_num is None:
+    print("use option -r with run number")
+    
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
 #check the active channels
@@ -167,7 +172,7 @@ def AnalWave(waveT,waveV,name,risetimeCut=50E-9):
     signal=wf.ScopeSignalSlow(waveT,waveV,name,risetimeCut=50E-9)
     return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.EpeakCharge,signal.risetime,-1*signal.Ampmin]
 #if drawing cannot paralelize
-if args.draw=="0":
+if args.draw is None:
     pool = mp.Pool(mp.cpu_count())
     results = pool.starmap(AnalWave,[(wave["T"],wave["V"],args.name+str(i)) for wave in waves])
     pool.close()
