@@ -144,7 +144,7 @@ main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creati
 if args.batch=="1": ROOT.gROOT.SetBatch(True)
 e=1.6E-19
 
-#selection on number of ile to analyze
+#selection on number of file to analyze
 if args.selFiles=="all":
     num=len(files)
 else:
@@ -204,8 +204,8 @@ if len(sigma)!=0:
     hist2D("AmpChargeCorr", amplitudes,echarges,"Amplitudes(-V)","Echarge(C)")
     graph(np.arange(0,len(amplitudes),1),amplitudes,"Time(a.u.)","Amplitudes(-V)")
 
-#with the slow amplifier the charge is not exactly the charge beacuse
-#the amplifier Gain is not exacly know (well we can calibrate it)
+#with the slow amplifier the charge is not exactly the charge because
+#the amplifier Gain is not exactly known (well we can calibrate it)
 #However, to measure PE/MIP we do the ratio between mean charges so
 #it is jargs.writChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 
@@ -219,7 +219,7 @@ print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
 if args.writecsv is None:
     f = open(base_path+"resultsPE.csv", "a")
-    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
+    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARITMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
     f.close()
 
