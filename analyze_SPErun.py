@@ -61,41 +61,42 @@ def hist2D(name,list_x, list_y, x_name, y_name, channels=20, linecolor=4, linewi
     #hist.Write()
     return hist
 
-def canvas(plot,name="test", size=800, leftmargin=0.1, rightmargin=0.2,tmin=0, tmax=0, Tline=False):
-    y_name=plot.GetYaxis().GetTitle()
-    x_name=plot.GetXaxis().GetTitle()
-    can1=ROOT.TCanvas(name, name)
-    can1.SetFillColor(0);
-    can1.SetBorderMode(0);
-    can1.SetBorderSize(2);
-    can1.SetLeftMargin(leftmargin);
-    can1.SetRightMargin(rightmargin);
-    can1.SetTopMargin(0.1);
-    can1.SetBottomMargin(0.1);
-    can1.SetFrameBorderMode(0);
-    can1.SetFrameBorderMode(0);
-    can1.SetFixedAspectRatio();
-    plot.GetXaxis().SetRangeUser(0.8*tmin, 2*tmax)
-    plot.Draw("ALP")
-
-    if Tline==True:
-        can1.Update()
-        ymax=ROOT.gPad.GetUymax()
-        ymin=ROOT.gPad.GetUymin()
-        line=ROOT.TLine(tmin,ymin,tmin,ymax)
-        line.SetLineColor(2)
-        line.SetLineWidth(2)
-        line.Draw("SAME")
-
-        line1=ROOT.TLine(tmax,ymin,tmax,ymax)
-        line1.SetLineColor(2)
-        line1.SetLineWidth(2)
-        line1.Draw("SAME")
-
-
-    can1.Write()
-    can1.SaveAs(name+".png")
-    return can1
+# this function is not used
+#def canvas(plot,name="test", size=800, leftmargin=0.1, rightmargin=0.2,tmin=0, tmax=0, Tline=False):
+#    y_name=plot.GetYaxis().GetTitle()
+#    x_name=plot.GetXaxis().GetTitle()
+#    can1=ROOT.TCanvas(name, name)
+#    can1.SetFillColor(0);
+#    can1.SetBorderMode(0);
+#    can1.SetBorderSize(2);
+#    can1.SetLeftMargin(leftmargin);
+#    can1.SetRightMargin(rightmargin);
+#    can1.SetTopMargin(0.1);
+#    can1.SetBottomMargin(0.1);
+#    can1.SetFrameBorderMode(0);
+#    can1.SetFrameBorderMode(0);
+#    can1.SetFixedAspectRatio();
+#    plot.GetXaxis().SetRangeUser(0.8*tmin, 2*tmax)
+#    plot.Draw("ALP")
+#
+#    if Tline==True:
+#        can1.Update()
+#        ymax=ROOT.gPad.GetUymax()
+#        ymin=ROOT.gPad.GetUymin()
+#        line=ROOT.TLine(tmin,ymin,tmin,ymax)
+#        line.SetLineColor(2)
+#        line.SetLineWidth(2)
+#        line.Draw("SAME")
+#
+#        line1=ROOT.TLine(tmax,ymin,tmax,ymax)
+#        line1.SetLineColor(2)
+#        line1.SetLineWidth(2)
+#        line1.Draw("SAME")
+#
+#
+#    can1.Write()
+#    can1.SaveAs(name+".png")
+#    return can1
 
 def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot = ROOT.TGraph(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d"))
@@ -111,12 +112,12 @@ def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 #parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
-parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default='None')
+parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default=None)
 parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
 parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 #parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="1")
-parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default="None")
+parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default=None)
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
 args = parser.parse_args()
@@ -130,13 +131,18 @@ if run_num is None:
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
 
-#check the active channels
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
+
+#wait 41.5h to delete
+"""
+#check the active channels
 active_channels=[0,0,0,0]
 for i in range(4):
     if any("C"+str(i+1) in f for f in files):
         active_channels[i]=1
+"""
+
 print("################Analysing Run"+run_num+"################")
 #check if folder exist, if not create it
 if not os.path.isdir(result_path):
@@ -144,6 +150,7 @@ if not os.path.isdir(result_path):
 
 main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")  #root file creation
 if args.batch=="1": ROOT.gROOT.SetBatch(True)
+
 e=1.6E-19
 
 #selection on number of file to analyze
@@ -170,20 +177,26 @@ main.mkdir("RawWaveforms")
 main.cd("RawWaveforms")
 print("Analyzing...")
 start=time.time()
+i=0
 def AnalWave(waveT,waveV,name,risetimeCut=50E-9):
     signal=wf.ScopeSignalSlow(waveT,waveV,name,risetimeCut=50E-9)
     return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.EpeakCharge,signal.risetime,-1*signal.Ampmin]
 #if drawing cannot paralelize
 if args.draw is None:
     pool = mp.Pool(mp.cpu_count())
-    results = pool.starmap(AnalWave,[(wave["T"],wave["V"],args.name+str(i)) for wave in waves])
+    argsList=[]
+    for wave in waves:
+        argsList.append((wave["T"],wave["V"],args.name+str(i)))
+        i=i+1
+    results = pool.starmap(AnalWave,argsList)
+    #results = pool.starmap(AnalWave,[(wave["T"],wave["V"],args.name+str(i)) for wave in waves])
     pool.close()
 else:
     results=[]
     for wave in tqdm.tqdm(waves):
         wf.ScopeSignalSlow(wave["T"],wave["V"],args.name+str(i),risetimeCut=50E-9).WaveSave(EpeakLines=True, Write=True)
         results.append(AnalWave(wave["T"],wave["V"],args.name+str(i)))
-
+        i=i+1
 
 print("Analyzing time (s):", time.time()-start)
 
