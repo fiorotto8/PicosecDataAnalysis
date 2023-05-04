@@ -159,13 +159,17 @@ def Canvas1D(plot):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
-parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
+#parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
 parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
-parser.add_argument('-c','--channel',help='chennel to analyze defaut=2', action='store', default="2")
+parser.add_argument('-c','--channel',help='chennel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
-parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
-parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
-parser.add_argument('-po','--polya',help='Enable the complex polya fit', action='store', default="0")
+parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
+#parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
+#parser.add_argument('-po','--polya',help='Enable the complex polya fit', action='store', default="0")
+parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=1.5 mm', action='store',  default=1.5)
+parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default=None)
+parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
+parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default=None)
 
 args = parser.parse_args()
 
@@ -239,7 +243,7 @@ for i in tqdm.tqdm(range(len(waves))):
     else:
         #print(ID[i],x,y)
         signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), risetimeCut=50E-9)
-        if args.draw=="1":
+        if args.draw is not None:
             #signal.WaveGraph().Write()
             signal.WaveSave(EpeakLines=True,Write=True)
         #check if signal is bad
@@ -300,7 +304,8 @@ hist(y, "y_distr DRAW CUT")
 #CUTS
 #calculate centroid of device by average
 x_m,y_m=np.mean(x), np.mean(y)
-geo_cut=1.5#mm round the max radius where the cherenkov come is still inside
+#geo_cut=1.5 
+geo_cut=args.geo #mm round the max radius where the cherenkov come is still inside
 maskIDX_geocut=[]#indeces to remove
 for i in range(len(x)):
     if (pow((x[i]-x_m),2)+pow((y[i]-y_m),2))>pow(geo_cut,2):
@@ -341,7 +346,7 @@ main.cd()
 charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=200,bin="lin")
 amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=200,bin="lin")
 
-if args.polya=="1":
+if args.polya is not None:
     a=charge.ComplexPolya(path=result_path)
     b=amps.ComplexPolya(path=result_path)
 else:
@@ -349,7 +354,7 @@ else:
     b=amps.PolyaFit(save=True, path=result_path)
 print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
-if args.writecsv=="1":
+if args.writecsv is not None:
     f = open(base_path+"resultsPE.csv", "a")
     #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
