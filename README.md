@@ -28,7 +28,7 @@ After that, there are some definitions of functions that are used to create hist
 Then the options written above are set. For the options that can only be on/off the default is defined as `None` and every value the user types will change the state.
 
 Later `run_path` and `result_path` are updated depending on the `-r` value specified by the user.
-Then the program checks which channels of the scope are active. It is performed with a loop in every directory in `run_path`. If is founded a `.trc` file then the correspondent channel is active (?).
+
 
 After is created the results folder, if it doesn't exist yet, a file ROOT named `result_path/Run_*run_num*.root`.
 

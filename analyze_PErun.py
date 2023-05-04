@@ -300,10 +300,10 @@ hist(y, "y_distr DRAW CUT")
 #CUTS
 #calculate centroid of device by average
 x_m,y_m=np.mean(x), np.mean(y)
-geo_cut=9#mm round the max radius where the cherenkov come is still inside
+geo_cut=1.5#mm round the max radius where the cherenkov come is still inside
 maskIDX_geocut=[]#indeces to remove
 for i in range(len(x)):
-    if (pow((x[i]-x_m),2)+pow((y[i]-y_m),2))>geo_cut:
+    if (pow((x[i]-x_m),2)+pow((y[i]-y_m),2))>pow(geo_cut,2):
         maskIDX_geocut.append(i)
     else:
         continue

@@ -224,6 +224,8 @@ if len(sigma)!=0:
 #However, to measure PE/MIP we do the ratio between mean charges so
 #it is jargs.writChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 
+charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=2000,bin="lin")
+amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 if args.polya is None:
     a=charge.ComplexPolya(path=result_path)
     b=amps.ComplexPolya(path=result_path)
