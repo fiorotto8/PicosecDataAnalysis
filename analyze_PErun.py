@@ -195,7 +195,7 @@ main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creati
 if args.batch=="1": ROOT.gROOT.SetBatch(True)
 e=1.6E-19
 
-#selection on number of ile to analyze
+#selection on number of file to analyze
 if args.selFiles=="all":
     num=len(files)
 else:

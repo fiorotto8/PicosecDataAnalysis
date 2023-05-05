@@ -30,7 +30,17 @@ Then the options written above are set. For the options that can only be on/off 
 Later `run_path` and `result_path` are updated depending on the `-r` value specified by the user.
 
 
-After is created the results folder, if it doesn't exist yet, a file ROOT named `result_path/Run_*run_num*.root`.
+After is created the results folder, if it doesn't exist yet, and a file ROOT named `result_path/Run_*run_num*.root`.
+
+Then is take the number of files to analyse. If is not specified by the user the program will analyse every file in the selected run. Files are sorted by channel number (the default channel is 2). 
+
+After are taked the files separately and is used the class `ScopeSequence` that is defined in `waveform`. Initialising a `ScopeSequence` object defines automatically some wave and scope parameters like impedance and point per wave. With the function `GetWaves()` every wave is taken singularly. The time elapsed collecting waves is computed and shown in the terminal.
+
+Later is created the `RawWaveForm` folder in the main ROOT directory. 
+
+Then is started the analysis. 
+
+
 
 
 
