@@ -180,8 +180,8 @@ def plotsDF(df, textOFF):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
-parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
-parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
+parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
+parser.add_argument('-b','--batch',help='Disable the batch mode of ROOT', action='store', default=None)
 parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="2")
 parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
@@ -212,7 +212,7 @@ if not os.path.isdir(result_path):
 
 main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creation
 #main=ROOT.TFile("Run_"+run_num+".root","RECREATE")#root file creation
-if args.batch=="1": ROOT.gROOT.SetBatch(True)
+if args.batch is None: ROOT.gROOT.SetBatch(True)
 e=1.6E-19
 
 #selection on number of ile to analyze
@@ -265,6 +265,7 @@ main.mkdir("RawWaveforms/REF/Signal")
 print("Analyzing")
 for i in tqdm.tqdm(range(len(wavesDUT))):
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
+    #track.WaveGraph(write=True)
     #get coordniates and discaard the non resctostruded events
     if track.ID not in track_info.index:
         notReco.append(i)
@@ -272,7 +273,7 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
     else:
         signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=[0.5E-9,2.5E-9],sigma=5,fit=True, badDebug=args.debugBad)
         signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=[0.1E-9,2.5E-9],sigma=5,fit=True, UseDeriv=False, badDebug=args.debugBad)
-        if args.draw=="1":# and signalDUT.badSignalFlag==False:
+        if args.draw is not None:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
             #wf.DerivSignal(signalDUT).WaveSave(EpeakLines=True,Write=True,Zoom=True)

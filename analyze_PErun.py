@@ -160,13 +160,13 @@ def Canvas1D(plot):
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 #parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
-parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
+parser.add_argument('-b','--batch',help='disable the batch mode of ROOT', action='store', default=None)
 parser.add_argument('-c','--channel',help='chennel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
 #parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
 #parser.add_argument('-po','--polya',help='Enable the complex polya fit', action='store', default="0")
-parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=1.5 mm', action='store',  default=1.5)
+parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=2 mm', action='store',  default=2)
 parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default=None)
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
 parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default=None)
@@ -192,7 +192,7 @@ if not os.path.isdir(result_path):
 
 main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creation
 #main=ROOT.TFile("Run_"+run_num+".root","RECREATE")#root file creation
-if args.batch=="1": ROOT.gROOT.SetBatch(True)
+if args.batch is None: ROOT.gROOT.SetBatch(True)
 e=1.6E-19
 
 #selection on number of file to analyze

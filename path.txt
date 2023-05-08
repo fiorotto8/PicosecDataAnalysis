@@ -1,5 +1,5 @@
 base_path="/media/bavia/Dati/May_2023/"
 scope="Pool3/"
-run_path=base_path+"Runs/Run"
+run_path=base_path+"Runs/"+scope+"Run"
 result_path="../TestBeamResults/May_2023/Run"
 trk_path=base_path+"tracker/"

@@ -112,8 +112,8 @@ def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 #parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
-parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default=None)
-parser.add_argument('-b','--batch',help='Run ROOT in batch mode default=1', action='store', default='1')
+parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
+parser.add_argument('-b','--batch',help='Disable the batch mode of ROOT', action='store', default=None)
 parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 #parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="1")
@@ -131,6 +131,7 @@ if run_num is None:
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
 
+print(run_path)
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
 
@@ -149,7 +150,7 @@ if not os.path.isdir(result_path):
     os.makedirs(result_path)
 
 main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")  #root file creation
-if args.batch=="1": ROOT.gROOT.SetBatch(True)
+if args.batch is None: ROOT.gROOT.SetBatch(True)
 
 e=1.6E-19
 
@@ -178,7 +179,7 @@ main.cd("RawWaveforms")
 print("Analyzing...")
 start=time.time()
 i=0
-def AnalWave(waveT,waveV,name,risetimeCut=50E-9):
+def AnalWave(waveT,waveV,name,risetimeCut=0.1E-9):
     signal=wf.ScopeSignalSlow(waveT,waveV,name,risetimeCut=50E-9)
     return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.EpeakCharge,signal.risetime,-1*signal.Ampmin]
 #if drawing cannot paralelize
@@ -239,24 +240,3 @@ if args.writecsv is None:
     #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARITMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
     f.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#

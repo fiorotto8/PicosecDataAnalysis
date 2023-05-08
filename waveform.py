@@ -56,7 +56,7 @@ def GetStdErr(arr):
     return np.sqrt( (D4-std**4)/(N-1) )/(2*std)
 
 class ScopeSequence:
-    def __init__(self, file, name, scopeImpedence=50, AmplifierGain=100,SampRate=20E9):
+    def __init__(self, file, name, scopeImpedence=50, AmplifierGain=100,SampRate=10E9):
         self.name = name
         self.scopeImpedence = scopeImpedence
         self.AmplifierGain = AmplifierGain
