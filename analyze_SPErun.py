@@ -120,6 +120,7 @@ parser.add_argument('-s','--selFiles',help='limit in the number of files to anal
 parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default=None)
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
+parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
 args = parser.parse_args()
 
 #get the run number from path
@@ -134,15 +135,6 @@ result_path=result_path+run_num+"/"
 print(run_path)
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
-
-#wait 41.5h to delete
-"""
-#check the active channels
-active_channels=[0,0,0,0]
-for i in range(4):
-    if any("C"+str(i+1) in f for f in files):
-        active_channels[i]=1
-"""
 
 print("################Analysing Run"+run_num+"################")
 #check if folder exist, if not create it
@@ -170,17 +162,15 @@ for file in tqdm.tqdm(files[:num]):
     Seq=wf.ScopeSequence(run_path+file,"track_"+args.name)
     waves.extend(Seq.GetWaves())
 
-
 print("Collecting time (s):", time.time()-start)
-
 
 main.mkdir("RawWaveforms")
 main.cd("RawWaveforms")
 print("Analyzing...")
 start=time.time()
 i=0
-def AnalWave(waveT,waveV,name,risetimeCut=0.1E-9):
-    signal=wf.ScopeSignalSlow(waveT,waveV,name,risetimeCut=50E-9)
+def AnalWave(waveT,waveV,name):
+    signal=wf.ScopeSignalSlow(waveT,waveV,name,sigma_thr=0,sigmaBad=0,risetimeCut=0,badDebug=args.debugBad,EpeakBadDisable=True)
     return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.EpeakCharge,signal.risetime,-1*signal.Ampmin]
 #if drawing cannot paralelize
 if args.draw is None:
@@ -225,18 +215,20 @@ if len(sigma)!=0:
 #However, to measure PE/MIP we do the ratio between mean charges so
 #it is jargs.writChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 
-charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=2000,bin="lin")
+#charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=2000,bin="lin")
 amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 if args.polya is None:
-    a=charge.ComplexPolya(path=result_path)
+    #a=charge.ComplexPolya(path=result_path)
     b=amps.ComplexPolya(path=result_path)
 else:
-    a=charge.PolyaFit(save=True, path=result_path)
+    #a=charge.PolyaFit(save=True, path=result_path)
     b=amps.PolyaFit(save=True, path=result_path)
 print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
 if args.writecsv is None:
-    f = open(base_path+"resultsPE.csv", "a")
+    f = open(csv_path+"resultsPE.csv", "a") 
+    #header=['Run NUM','RUN TYPE','MEAN RISETIME','ERR RISETIME','ARITMETIC MEAN CHARGE','CHARGE FIT','ERR CHARGE','CHI2/NDF','ARITMETIC MEAN AMPLITUDE','AMPLITUDE FIT','ERR AMPLITUDE','CHI2/NDF','survived Waves from cuts']
+ 
     #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARITMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
     f.close()
