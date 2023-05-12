@@ -14,7 +14,7 @@ import math as m
 #from physlibs.root import functions
 
 """
-to get the maxmiumo fht eelctron peak derivative and average in made to get the zero crossing point
+to get the maximum fht electron peak derivative and average in made to get the zero crossing point
 this is made in the function and is not using the methods Average() and Derivative()
 """
 
@@ -56,7 +56,7 @@ def GetStdErr(arr):
     return np.sqrt( (D4-std**4)/(N-1) )/(2*std)
 
 class ScopeSequence:
-    def __init__(self, file, name, scopeImpedence=50, AmplifierGain=100,SampRate=20E9):
+    def __init__(self, file, name, scopeImpedence=50, AmplifierGain=100,SampRate=10E9):
         self.name = name
         self.scopeImpedence = scopeImpedence
         self.AmplifierGain = AmplifierGain
@@ -200,19 +200,23 @@ class ScopeSignalCividec:
         #find peak
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
         self.tFitMax=self.x[self.AmpminIdx]
+        """
+        if self.tFitMax>250E-9 or self.tFitMax<200E-9:
+            self.badSignalFlag = True
+            if badDebug=="1": print("bad becasue peak is not in [200,250]ns (noise)")
+        """
         #get noise
         self.baseLine=self.GetMeanNoise()
         self.baseLineStd=self.GetStdNoise()
         self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
         if self.SigmaOutNoise<sigma:
             self.badSignalFlag = True
-            if badDebug=="1":
-                print("bad from sigmaOutNoise")
+            if badDebug=="1": print("bad from sigmaOutNoise (noise)")
 
         #check if flicker noise is present
         PosPoints=[p for p in self.y[self.y>0]]
         if len(PosPoints)<1:
-            self.PosStd=2*thresPosStd
+            self.PosStd=10
         else:
             self.PosStd=np.std(PosPoints)
         if thresPosStd is not None and self.PosStd>=thresPosStd:
@@ -552,9 +556,12 @@ class ScopeSignalCividec:
         return -sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
 
 class ScopeSignalSlow:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,sigma_thr=2, sigmaBad=5, risetimeCut=2E-9):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,sigma_thr=2, sigmaBad=5, risetimeCut=2E-9, badDebug=None, EpeakBadDisable=False):
         self.badSignalFlag = False
-
+        
+        self.badDebug=badDebug
+        self.EpeakBadDisable=EpeakBadDisable
+        
         self.name = name
         self.noiseHisto = None
 
@@ -580,16 +587,18 @@ class ScopeSignalSlow:
         self.baseLineStd=self.GetStdNoise()
         self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
 
-        if self.SigmaOutNoise<sigmaBad:
+        if self.SigmaOutNoise<sigmaBad: 
             self.badSignalFlag = True
+            if badDebug is not None: print("bad because of sigma not out noise")
 
         self.y=self.y-self.baseLine #baseline correction
         #get again the peak (probably not needed)
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
         #if negative (positive in origin) the signal is defentiley bad
+        #just beacuse it was baseline subtracket
         if self.Ampmin>0:
             self.badSignalFlag = True
-
+            if badDebug is not None: print("bad because of positive minimum")
 
         self.Epeakmin, self.EpeakminIdx=self.GetEpeakMin(sigma=sigma_thr)
         self.tFitMin=self.x[self.EpeakminIdx]
@@ -598,11 +607,13 @@ class ScopeSignalSlow:
 
         if self.risetime<risetimeCut:
             self.badSignalFlag = True
+            if badDebug is not None: print("bad because of risetime cut")
+
 
         self.EpeakCharge, self.Gain=self.GetGain()
 
     def isBad(self):
-        self.badSignalFlag = True
+        self.badSignalFlag = True    
 
     def __str__(self):
         return self.GetName()
@@ -666,7 +677,7 @@ class ScopeSignalSlow:
             p.AddText("Min peak")
             p.AddText("Max peak")
             p.AddText("Peak")
-            p.SetFillStyle(0);
+            p.SetFillStyle(0)
 
             t1,t2,t3 = ROOT.TText(),ROOT.TText(),ROOT.TText()
             t1=p.GetLineWith("Min")
@@ -746,9 +757,9 @@ class ScopeSignalSlow:
                 break
             else:
                 continue
-        if x_peak==0:
+        if x_peak==0 and self.EpeakBadDisable is False:
             self.isBad()
-        #print(sub_y[-i],mean, std)
+            if self.badDebug is not None: print("bad because epeak start at index 0")
         return [x_peak,len(sub_y)-i]
 
 
@@ -770,8 +781,10 @@ class ScopeSignalSlow:
                 break
             else:
                 continue
-        if x_peak==0:
+        if x_peak==0 and self.EpeakBadDisable is False:
             self.isBad()
+            if self.badDebug is not None: print("bad because epeak finishes at index 0")
+
         #print(x_peak,self.x[offseti+i])
         return [x_peak,offseti+i]
 
@@ -1190,7 +1203,27 @@ class ChargeDistr():
             #hist.Fit("polyaTF1","Q","",0,np.max(self.x))
             polyaTF1.SetParLimits(4,0.5*m, 1.5*m)
             polyaTF1.SetParLimits(5,0.5*s, 1.5*s)
-            hist.Fit("polyaTF1","Q","",m-s,np.max(self.x))
+            #polyaTF1.SetParLimits(0,0.5*s, 1.5*s)
+            #polyaTF1.SetParLimits(1,0.5*s, 1.5*s)
+            #polyaTF1.SetParLimits(2,0.5*s, 1.5*s)
+            #polyaTF1.SetParLimits(3,0.5*s, 1.5*s)
+            #polyaTF1.SetParLimits(4,0.5*s, 1.5*s)
+            #polyaTF1.SetParLimits(4,0.5*s, 1.5*s)
+            #polyaTF1.FixParameter(4,m)
+            #polyaTF1.FixParameter(5,s)
+            #polyaTF1.FixParameter(0,34.3252)
+            #polyaTF1.FixParameter(1,0.00942031)
+            #polyaTF1.FixParameter(2,2.48819)
+            #polyaTF1.FixParameter(3,2340)
+            #polyaTF1.FixParameter(4,m)
+            #polyaTF1.SetParameter(0,34.3252)
+            #polyaTF1.SetParameter(1,0.00942031)
+            #polyaTF1.SetParameter(2,2.48819)
+            #polyaTF1.SetParameter(3,2340)
+            #polyaTF1.SetParameter(4,m)
+            #polyaTF1.SetParameter(5,s)
+            #hist.Fit("polyaTF1","Q","",m-3*s,np.max(self.x))
+            hist.Fit("polyaTF1","Q","",0,np.max(self.x))
 
         #hist.Write()
         hist.SetStats(False)

@@ -10,6 +10,7 @@ import os, glob
 import tqdm
 import math as m
 import time
+import uproot 
 
 file = open("path.txt", "r")
 for string in file:
@@ -210,7 +211,7 @@ print("################Analysing Run"+run_num+"################")
 if not os.path.isdir(result_path):
     os.makedirs(result_path)
 
-main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creation
+main=ROOT.TFile(result_path+"/Waves_Run_"+run_num+".root","RECREATE")#root file creation
 #main=ROOT.TFile("Run_"+run_num+".root","RECREATE")#root file creation
 if args.batch is None: ROOT.gROOT.SetBatch(True)
 e=1.6E-19
@@ -271,8 +272,8 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=[0.5E-9,2.5E-9],sigma=5,fit=True, badDebug=args.debugBad)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=[0.1E-9,2.5E-9],sigma=5,fit=True, UseDeriv=False, badDebug=args.debugBad)
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=None,sigma=0,sigma_thr=0,fit=True, badDebug=args.debugBad)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=None,sigma=0,fit=True, UseDeriv=False, badDebug=args.debugBad)
         if args.draw is not None:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
@@ -305,11 +306,26 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
 print("Fraction of NOTRECO bad events:",len(notReco)/len(wavesDUT))
 print("Fraction of DUT bad events:",len(badDUT)/(len(wavesDUT)-len(notReco)))
 print("Fraction of REF bad events:",len(badREF)/(len(wavesDUT)-len(notReco)))
-print("Remaining events:",1-(len(badDUT)-len(badREF)/(len(wavesDUT))))
+print("Fraction of remaining events:",1-((len(badDUT)-len(badREF))/(len(wavesDUT))))
 #print(notReco)
 #print(badDUT)
 #print(badREF)
 
+main.Close()
+#reopen the file with uproot to write the ttree tabular
+file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
+
+cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
+
+
+dfDUT = pd.DataFrame(dataDUT,columns=cols)
+dfREF = pd.DataFrame(dataREF,columns=cols)
+
+file["DUTtree"]=dfDUT
+file["REFtree"]=dfREF
+
+
+"""
 cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
 
 #create dataframe and plot results
@@ -322,6 +338,9 @@ rDUT,thetaDUT=cart2pol(dfDUT["X"],dfDUT["Y"])
 rREF,thetaREF=cart2pol(dfREF["X"],dfREF["Y"])
 dfDUT=dfDUT.assign(radius=rDUT,angle=thetaDUT)
 dfREF=dfREF.assign(radius=rREF,angle=thetaREF)
+
+
+
 
 plotsDF(dfDUT,"DUT NO CUT")
 plotsDF(dfREF,"REF NO CUT")
@@ -356,3 +375,4 @@ for td in timeDIFF:
         timeDiffSel.append(td)
 timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=1000,write=True)
 
+"""
