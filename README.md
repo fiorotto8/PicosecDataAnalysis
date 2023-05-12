@@ -45,4 +45,11 @@ Then is started the analysis.
 
 
 # Analyze Multi PhotoElectron Run
+
+
 # Analyze Timing Run
+The code is divided into two parts for easy processing of data. `process_TIMErun.py` process the run and output a ROOT file with the ouput. The `analyze_TIMErun.py` take the raw data and applies the cut and performs the plotting.
+## Processing
+For now, no cuts are made so all the waveforms are passed.
+
+## Analizing

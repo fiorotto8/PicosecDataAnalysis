@@ -287,7 +287,12 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             signalREF.SigmoidFit(write=True)
         #check if signal is bad
         if signalDUT.badSignalFlag==True:
+            print(i)
             badDUT.append(i)
+            main.cd("RawWaveforms/DUT/Signal")
+            signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
+            main.cd("RawWaveforms/DUT/Fit")
+            signalDUT.SigmoidFit(write=True)
             continue
         elif signalREF.badSignalFlag==True:
             badREF.append(i)
