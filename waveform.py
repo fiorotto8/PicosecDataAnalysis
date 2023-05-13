@@ -176,7 +176,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name,thresPosStd=None, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=None,fit=False,satcut=None, UseDeriv=True, badDebug="0"):
+    def __init__(self, x, y, name,thresPosStd=None, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=None,fit=False,satcut=None, UseDeriv=True, badDebug=None):
         self.badSignalFlag = False
 
         self.name = name
@@ -185,11 +185,45 @@ class ScopeSignalCividec:
         self.scopeImpedence = scopeImpedence
         self.AmplifierGain = AmplifierGain
 
+        self.badDebug=badDebug
+
         self.sampling = round(x[1]-x[0],15)#round on femtosecond
         self.x=nparr(x)
         self.y=nparr(y)
         self.samples=len(x)
 
+        #find peak (needed for get the noise)
+        self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
+        self.tFitMax=self.x[self.AmpminIdx]
+        """
+        if self.tFitMax>250E-9 or self.tFitMax<200E-9:
+            self.badSignalFlag = True
+            if badDebug is not None: print("bad becasue peak is not in [200,250]ns (noise)")
+        """
+        #get noise
+        self.baseLine=self.GetMeanNoise()
+        self.baseLineStd=self.GetStdNoise()
+        self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
+        """
+        if self.SigmaOutNoise<sigma:
+            self.badSignalFlag = True
+            if badDebug is not None: print("bad from sigmaOutNoise (noise)")
+        """
+        
+        #check if flicker noise is present
+        PosPoints=[p for p in self.y[self.y>0]]
+        if len(PosPoints)<1:
+            self.PosStd=10
+        else:
+            self.PosStd=np.std(PosPoints)
+        """
+        if thresPosStd is not None and self.PosStd>=thresPosStd:
+            self.badSignalFlag = True
+            if badDebug is not None: print("bad from PositiveStd")
+        """
+        self.y=self.y-self.baseLine #baseline correction
+        #get again the peak (probably not needed)
+        self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
 
         #derivation
         y=np.gradient(self.y, edge_order)
@@ -197,53 +231,31 @@ class ScopeSignalCividec:
         kernel = np.ones(kernel_size) / kernel_size
         self.DerivAv= np.convolve(y, kernel, mode='same')
 
-        #find peak
-        self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
-        self.tFitMax=self.x[self.AmpminIdx]
-        """
-        if self.tFitMax>250E-9 or self.tFitMax<200E-9:
-            self.badSignalFlag = True
-            if badDebug=="1": print("bad becasue peak is not in [200,250]ns (noise)")
-        """
-        #get noise
-        self.baseLine=self.GetMeanNoise()
-        self.baseLineStd=self.GetStdNoise()
-        self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
-        if self.SigmaOutNoise<sigma:
-            self.badSignalFlag = True
-            if badDebug=="1": print("bad from sigmaOutNoise (noise)")
-
-        #check if flicker noise is present
-        PosPoints=[p for p in self.y[self.y>0]]
-        if len(PosPoints)<1:
-            self.PosStd=10
-        else:
-            self.PosStd=np.std(PosPoints)
-        if thresPosStd is not None and self.PosStd>=thresPosStd:
-            self.badSignalFlag = True
-            if badDebug=="1":
-                print("bad from PositiveStd")
-
-        self.y=self.y-self.baseLine #baseline correction
-        #get again the peak (probably not needed)
-        self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
-
+        #start and stop of epeak
         self.Epeakmin, self.EpeakminIdx=self.GetEpeakMin()
         self.tFitMin=self.x[self.EpeakminIdx]
         if UseDeriv==True:
             self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax_fromDerivative()
         else:
             self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax(sigma=sigma_thr)
-        self.risetime= self.RiseTimeData()
-
-        if risetimeCut is not None and (self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]):
-            self.badSignalFlag = True
-            if badDebug=="1":
-                print("bad from risetimeCut")
 
         self.Integral=(np.sum(self.y)/self.AmplifierGain)*(self.scopeImpedence*self.sampling)
         self.EpeakCharge, self.Gain=self.GetGain()
+        
+        self.risetime= self.RiseTimeData()
+        self.fit=self.SigmoidFit()
 
+        self.risetime=self.RiseTimeFit()
+        """
+        #risetime
+        self.risetime= self.RiseTimeData()
+        if risetimeCut is not None and (self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]):
+            self.badSignalFlag = True
+            if badDebug is not None: print("bad from risetimeCut")
+
+        """
+
+        """
         if fit==True:
             self.sat=self.ArrivalTimeCFDFit()
             #if nan is returned the CFD is out of domain
@@ -251,13 +263,11 @@ class ScopeSignalCividec:
             #sigma<=Delay/(ln(1/fraction))
             if m.isnan(self.sat):
                 self.badSignalFlag = True
-                if badDebug=="1":
-                    print("bad beacuse of NaN in SAT")
+                if badDebug is not None: print("bad beacuse of NaN in SAT")
             if satcut is not None and (self.sat<satcut[0] or self.sat>satcut[1]):
                 self.badSignalFlag = True
-                if badDebug=="1":
-                    print("bad from satCut")
-
+                if badDebug is not None: print("bad from satCut")
+        """
     def isBad(self):
         self.badSignalFlag = True
 
@@ -342,6 +352,15 @@ class ScopeSignalCividec:
     def RiseTimeData(self):
         return self.tFitMax-self.tFitMin
 
+    def RiseTimeFit(self,b=1):
+        fit=self.fit
+        inverse=self.GetInverseSigmoid(self.fit.GetParameter(0),self.fit.GetParameter(1),self.fit.GetParameter(2),b)
+        start=inverse.Eval(0.1*self.fit.GetParameter(0))
+        stop=inverse.Eval(0.9*self.fit.GetParameter(0))
+        
+        return stop-start
+        
+
     def GetNoiseList(self,fraction=0.8):
         """
         get the list of the noise before the signal
@@ -400,8 +419,8 @@ class ScopeSignalCividec:
                 break
             else:
                 continue
-        if x_peak==0:
-            self.isBad()
+        #if x_peak==0: self.isBad()
+        #if self.badDebug is not None: print("bad from not finding the epeak Min")
         return [x_peak,len(sub_y)-i]
 
     def GetEpeakMax(self, sigma=2):
@@ -423,9 +442,8 @@ class ScopeSignalCividec:
                     break
                 else:
                     continue
-            if x_peak==0:
-                self.isBad()
-            #print(x_peak,self.x[offseti+i])
+            #if x_peak==0: self.isBad()
+            #if self.badDebug is not None: print("bad from not finding the epeak Max")
             return [x_peak,offseti+i]
 
     def GetEpeakMax_fromDerivative(self,window=20):
@@ -442,7 +460,9 @@ class ScopeSignalCividec:
             if start+i==self.samples-1:#if the cose is going out the acquired time window
                 max=self.DerivAv[start+i]
                 tmax=start+i
-                self.isBad()
+                #self.isBad()
+                #if self.badDebug is not None: print("bad from not finding the epeak Max")
+
                 break
             if self.DerivAv[start+i]>=max:
                 max=self.DerivAv[start+i]
@@ -496,10 +516,9 @@ class ScopeSignalCividec:
                 continue
         return tarr
 
-    def GetInverseSigmoid(self):
-        FitFunc=self.SigmoidFit(test=False,write=False)
-        inverse=ROOT.TF1("inverse", "-[1]*log(([0]/x)-1)+[2]",self.Ampmin,0)
-        inverse.SetParameters(FitFunc.GetParameter(0),FitFunc.GetParameter(1),FitFunc.GetParameter(2))
+    def GetInverseSigmoid(self,A,mu,sigma,b=1):
+        inverse=ROOT.TF1("inverse", "-[1]*log(([0]/x)**(1/[3])-1)+[2]",self.Ampmin,0)
+        inverse.SetParameters(A,mu,sigma,b)
         return inverse
 
     def ArrivalTimeLEFit(self, threshold=0.2):
@@ -697,6 +716,7 @@ class ScopeSignalSlow:
 
     def RiseTimeData(self):
         return self.tFitMax-self.tFitMin
+
 
     def GetNoiseList(self,fraction=0.5):
         """

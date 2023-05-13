@@ -205,6 +205,9 @@ waves, waves_trk=[],[]
 #select only files for the selected channel
 files_signal=[item for item in files if 'C'+str(args.channel) in item]
 files_trk=[item for item in files if 'C3' in item]
+files_signal.sort()
+files_trk.sort()
+
 #remove the 0000 sequence
 #IN A FUTURE VERSION MAYBE CHECK IF THIS IS NEEDED!!!
     #it can happen that the first sequence is saved wrongly

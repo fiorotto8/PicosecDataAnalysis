@@ -10,6 +10,7 @@ import os, glob
 import tqdm
 import math as m
 import time
+import uproot
 
 file = open("path.txt", "r")
 for string in file:
@@ -180,15 +181,7 @@ def plotsDF(df, textOFF):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
-parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
-parser.add_argument('-b','--batch',help='Disable the batch mode of ROOT', action='store', default=None)
-parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="2")
-parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
-parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
-parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
-parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
-parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
-parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default="0")
+#parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 
 args = parser.parse_args()
 
@@ -196,163 +189,55 @@ args = parser.parse_args()
 run_num=args.run
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
-#check the active channels
-print(run_path)
-files=next(os.walk(run_path))[2]
-files=[f for f in files if '.trc' in f]
-active_channels=[0,0,0,0]
-for i in range(4):
-    if any("C"+str(i+1) in f for f in files):
-        active_channels[i]=1
-print("################Analysing Run"+run_num+"################")
 
-#check if folder exist, if not create it
-if not os.path.isdir(result_path):
-    os.makedirs(result_path)
+INfile = uproot.open(result_path+"/Raw_Run_"+run_num+".root")
+df=INfile["Tree"].arrays(library="pd")
 
-main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")#root file creation
-#main=ROOT.TFile("Run_"+run_num+".root","RECREATE")#root file creation
-if args.batch is None: ROOT.gROOT.SetBatch(True)
-e=1.6E-19
+filteredDF=df
 
-#selection on number of ile to analyze
-if args.selFiles=="all":
-    num=len(files)
-else:
-    num=int(args.selFiles)
+#cut on sigmoid mean
+#filteredDF=df[df["sigmoid meanDUT"]<240E-9]
+filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]<210E-9].index)
+filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>240E-9].index)
 
 
-wavesDUT, wavesREF, waves_trk=[],[],[]
-#select only files for the selected channel
-files_DUT=[item for item in files if 'C'+str(args.channelDUT) in item]
-files_REF=[item for item in files if 'C'+str(args.channelREF) in item]
-files_trk=[item for item in files if 'C3' in item]
+#cut on risetime
+filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]>0.8E-9].index)
+filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]<0.5E-9].index)
 
-print("Colletting waves")
-for i in tqdm.tqdm(range(len(files_DUT[:num]))):
-    Seq_DUT=wf.ScopeSequence(run_path+files_DUT[i],"DUT_"+args.name)
-    Seq_REF=wf.ScopeSequence(run_path+files_REF[i],"REF_"+args.name)
-    Seq_trk=wf.ScopeSequence(run_path+files_trk[i],"tracker_"+args.name)
-    wavesDUT.extend(Seq_DUT.GetWaves())
-    wavesREF.extend(Seq_REF.GetWaves())
-    waves_trk.extend(Seq_trk.GetWaves())
 
-#structure:
-"""
-# 0-->X
-# 1-->Y
-# 2-->noise
-# 3-->echarge
-# 4-->amplitude
-# 5-->sigma
-# 6-->risetime
-# 7-->SAT
-# 8-->PosStd
-"""
-dataDUT, dataREF, notReco,badDUT, badREF=[],[],[],[],[]
+#cut on amplitude
+#filteredDF=filteredDF.drop(filteredDF[filteredDF["amplitudeDUT"]<15E-3].index)
 
-#get the tracking info once so you don't have to open every time the dataframe
-#last row is shitty drop it
-df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
-track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
-track_info=track_info.set_index(track_info.columns[0])
-track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
 
-main.mkdir("RawWaveforms/DUT/Fit")
-main.mkdir("RawWaveforms/REF/Fit")
-main.mkdir("RawWaveforms/DUT/Signal")
-main.mkdir("RawWaveforms/REF/Signal")
-print("Analyzing")
-for i in tqdm.tqdm(range(len(wavesDUT))):
-    track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
-    #track.WaveGraph(write=True)
-    #get coordniates and discaard the non resctostruded events
-    if track.ID not in track_info.index:
-        notReco.append(i)
-        continue
-    else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=[0.5E-9,2.5E-9],sigma=5,fit=True, badDebug=args.debugBad)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=[0.1E-9,2.5E-9],sigma=5,fit=True, UseDeriv=False, badDebug=args.debugBad)
-        if args.draw is not None:# and signalDUT.badSignalFlag==False:
-            main.cd("RawWaveforms/DUT/Signal")
-            signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
-            #wf.DerivSignal(signalDUT).WaveSave(EpeakLines=True,Write=True,Zoom=True)
-            main.cd("RawWaveforms/REF/Signal")
-            signalREF.WaveSave(EpeakLines=True,Write=True,Zoom=True)
-            #fit
-            main.cd("RawWaveforms/DUT/Fit")
-            signalDUT.SigmoidFit(write=True)
-            main.cd("RawWaveforms/REF/Fit")
-            signalREF.SigmoidFit(write=True)
-        #check if signal is bad
-        if signalDUT.badSignalFlag==True:
-            badDUT.append(i)
-            continue
-        elif signalREF.badSignalFlag==True:
-            badREF.append(i)
-            continue
-        #else:
-        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat, signalDUT.PosStd])
-        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat, signalREF.PosStd])
-        """
-        if args.draw=="1":# and signalDUT.badSignalFlag==False:
-            print(i)
-            main.cd("RawWaveforms/DUT/Fit")
-            signalDUT.SigmoidFit(write=True)
-            main.cd("RawWaveforms/REF/Fit")
-            signalREF.SigmoidFit(write=True)
-        """
-print("Fraction of NOTRECO bad events:",len(notReco)/len(wavesDUT))
-print("Fraction of DUT bad events:",len(badDUT)/(len(wavesDUT)-len(notReco)))
-print("Fraction of REF bad events:",len(badREF)/(len(wavesDUT)-len(notReco)))
-print("Remaining events:",1-(len(badDUT)-len(badREF)/(len(wavesDUT))))
-#print(notReco)
-#print(badDUT)
-#print(badREF)
+#geometric cut
+DUTx_m,DUTy_m=np.mean(filteredDF["XDUT"]),np.mean(filteredDF["YDUT"])
+filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>4   ].index)
 
-cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
+#filteredDF=filteredDF[(df["XDUT"]-DUTx_m)**2+(df["YDUT"]-DUTy_m)**2<5]
 
-#create dataframe and plot results
-main.mkdir("NO CUT PLOT")
-main.cd("NO CUT PLOT")
-dfDUT = pd.DataFrame(dataDUT,columns=cols)
-dfREF = pd.DataFrame(dataREF,columns=cols)
 
-rDUT,thetaDUT=cart2pol(dfDUT["X"],dfDUT["Y"])
-rREF,thetaREF=cart2pol(dfREF["X"],dfREF["Y"])
-dfDUT=dfDUT.assign(radius=rDUT,angle=thetaDUT)
-dfREF=dfREF.assign(radius=rREF,angle=thetaREF)
+f=0.2
+Ddut=np.mean(filteredDF["risetimeDUT"])*(1-f)
+Dref=np.mean(filteredDF["risetimeREF"])*(1-f)
+#Dref, Ddut=0.5E-9,0.5E-9
+#print(Dref, Ddut)
 
-plotsDF(dfDUT,"DUT NO CUT")
-plotsDF(dfREF,"REF NO CUT")
+satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filteredDF["sigmoid sigmaDUT"]) - (1/f) )  )+filteredDF["sigmoid meanDUT"]
+satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
 
-timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
-hist(timeDIFF, "time difference NO CUT",channels=500)
+times=satREF-satDUT
+filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 
-xmDUT, ymDUT, xmREF, ymREF=np.mean(dfDUT["X"]),np.mean(dfDUT["Y"]),np.mean(dfREF["X"]),np.mean(dfREF["Y"])
-geo_cut=2#mm radius from the center both the detector!
+#drop nan from sat calculation
+filteredDF=filteredDF.dropna()
 
-drop_indexDUT,drop_indexREF=[],[]
-drop_index=dfDUT[dfDUT["radius"] > geo_cut].index
-drop_index.union(dfDUT[dfREF["radius"] > geo_cut].index)
-#drop_indexREF=dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index
-eventDrawCut=1-len(drop_index)/(len(dfDUT["X"]))
-print("Survival after GEO cut:",eventDrawCut)
-dfDUT,dfREF = dfDUT.drop(drop_index),dfREF.drop(drop_index)
+mean=np.mean(times)
+#cut on sat +/- 400ps
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
 
-main.mkdir("GEO CUT PLOT")
-main.cd("GEO CUT PLOT")
-plotsDF(dfDUT,"DUT GEO CUT")
-plotsDF(dfREF,"REF GEO CUT")
-timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
-hist(timeDIFF, "time difference GEO CUT",channels=100)
 
-TimeCut=0.3E-9
-#try to cut
-timeDiffSel, TDmin, TDmax=[], np.median(timeDIFF)-3*TimeCut, np.median(timeDIFF)+3*TimeCut
-for td in timeDIFF:
-    #print(td,TDmax,TDmin)
-    if td>=TDmin and td<=TDmax:
-        timeDiffSel.append(td)
-timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=1000,write=True)
-
+print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
+OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
+OUTfile["Tree"]=filteredDF

@@ -37,26 +37,26 @@ com
 
 #photoelectrons from beam
 #first PE run B4c 7nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 323 -c 4
 python3 analyze_PErun.py -r 324 -c 4
 python3 analyze_PErun.py -r 329 -c 4
 python3 analyze_PErun.py -r 330 -c 4
-com
+#com
 #second PE run B4c 7nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 373 -c 4
 python3 analyze_PErun.py -r 374 -c 4
 python3 analyze_PErun.py -r 375 -c 4
 python3 analyze_PErun.py -r 376 -c 4
-com
+#com
 
 #CsI PEs
-<<com
+#<<com
 python3 analyze_PErun.py -r 389 -c 4
 python3 analyze_PErun.py -r 390 -c 4
 python3 analyze_PErun.py -r 391 -c 4
-com
+#com
 
 #timing runs
 <<com

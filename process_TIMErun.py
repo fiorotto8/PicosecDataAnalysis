@@ -189,7 +189,7 @@ parser.add_argument('-s','--selFiles',help='limit in the number of files to anal
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
 parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
-parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default="0")
+parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
 
 args = parser.parse_args()
 
@@ -229,6 +229,10 @@ files_DUT=[item for item in files if 'C'+str(args.channelDUT) in item]
 files_REF=[item for item in files if 'C'+str(args.channelREF) in item]
 files_trk=[item for item in files if 'C3' in item]
 
+files_DUT.sort()
+files_REF.sort()
+files_trk.sort()
+
 print("Colletting waves")
 for i in tqdm.tqdm(range(len(files_DUT[:num]))):
     Seq_DUT=wf.ScopeSequence(run_path+files_DUT[i],"DUT_"+args.name)
@@ -246,11 +250,13 @@ for i in tqdm.tqdm(range(len(files_DUT[:num]))):
 # 3-->echarge
 # 4-->amplitude
 # 5-->sigma
-# 6-->risetime
-# 7-->SAT
 # 8-->PosStd
+# 9-->amplitude fit
+# 10-->sigma fit
+# 11-->average fit
+# 12-->risetime
 """
-dataDUT, dataREF, notReco,badDUT, badREF=[],[],[],[],[]
+data,dataDUT,dataREF, notReco,badDUT, badREF=[],[],[],[],[],[]
 
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
@@ -287,19 +293,28 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             signalREF.SigmoidFit(write=True)
         #check if signal is bad
         if signalDUT.badSignalFlag==True:
-            print(i)
             badDUT.append(i)
+            """
+            print(i)
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
             main.cd("RawWaveforms/DUT/Fit")
             signalDUT.SigmoidFit(write=True)
+            """
             continue
         elif signalREF.badSignalFlag==True:
             badREF.append(i)
             continue
         #else:
-        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.risetime, signalDUT.sat, signalDUT.PosStd])
-        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.risetime, signalREF.sat, signalREF.PosStd])
+        data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.risetime,
+                    track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.risetime])
+        
+        """
+        #OLD
+        cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
+        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise,signalDUT.risetime,signalDUT.ArrivalTimeCFDFit(), signalDUT.PosStd])
+        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise,signalREF.risetime,signalREF.ArrivalTimeCFDFit(), signalREF.PosStd])
+        """
         """
         if args.draw=="1":# and signalDUT.badSignalFlag==False:
             print(i)
@@ -320,17 +335,19 @@ main.Close()
 #reopen the file with uproot to write the ttree tabular
 file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
 
-cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
+cols=["original index","XDUT","YDUT","noiseDUT","echargeDUT","amplitudeDUT","sigmaDUT","PosStdDUT","sigmoid ampltitudeDUT","sigmoid sigmaDUT","sigmoid meanDUT","risetimeDUT","XREF","YREF","noiseREF","echargeREF","amplitudeREF","sigmaREF","PosStdREF","sigmoid ampltitudeREF","sigmoid sigmaREF","sigmoid meanREF","risetimeREF"]
 
 
-dfDUT = pd.DataFrame(dataDUT,columns=cols)
-dfREF = pd.DataFrame(dataREF,columns=cols)
+dfDUT = pd.DataFrame(data,columns=cols)
 
-file["DUTtree"]=dfDUT
-file["REFtree"]=dfREF
+file["Tree"]=dfDUT
 
 
 """
+#PART OF THE OLD SCRIPT
+
+main=ROOT.TFile(result_path+"/Waves_Run_"+run_num+".root","RECREATE")#root file creation
+
 cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
 
 #create dataframe and plot results
