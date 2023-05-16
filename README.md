@@ -20,6 +20,7 @@ Tools for Picosec Analysis:
 - `-po` any value will disable the complex polya fit, default None
 - `-n` put a name for the SignalScope object if you want, default=test
 - `-w` any value will disable the csv results writing, default None
+- `deb` print the reason of some badflag
 
 ## Description
 The program starts by executing `path.txt` lines. 
@@ -69,6 +70,24 @@ The columns of the data frame are:
 
 
 # Analyze Multi PhotoElectron Run
+Code structure is the same as SPE analysis so in the following are described only the differences between them.
+## Highlights
+ Differences in cuts:
+ - The signal peak must be over 5 times the standard deviation of the baseline
+ - Geocut: there is a geometrical cut at an adjustable radius around the center of the detector in order to take into account only the events which Cherenkov cone is totally contained in the active surface of the detector. `-g` is used to select the radius of the geocut, default is 2mm.
+## Description
+When you are analyzing PE Runs you need the tracker information, so when the code gets the signal files it takes also the tracker files. After that those files are sorted in order to couple the tracker data to the right signal. Then both files are "unpacked".
+
+Then the code takes the spatial information from the `.dat` file and set the correct index for the event reconstructed.
+
+After, the events not reconstructed are discarded and those who survive are checked to be good or bad. Signal can be bad if the rise time is less than the cut (E-9) or if the peak is not above the threshold mentioned before. The spatial information is now attached to the events that passed these tests, allowing the code to perform the geocut. The cut is a simple check if the distance between the particle impact point and the center of the detector is less than the selected radius, if is not the event is not taken into account. The fraction of events excluded is computed and printed. 
+
+In addition to the same plot of the SPE code, are drawn the 2D maps of charges, amplitudes and rise times in function of the position.
+
+Then the fit part is the same as the SPE analysis.
+
+
+
 
 
 # Analyze Timing Run

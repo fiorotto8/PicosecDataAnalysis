@@ -239,7 +239,7 @@ for i in tqdm.tqdm(range(len(waves))):
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
     #track.WaveGraph(write=True)
     ID.append(track.ID)
-    #get coordniates and discaard the non resctostruded events
+    #get coordinates and discard the non reconstructed events
     if track.ID not in track_info.index:
         notReco.append(i)
         continue
