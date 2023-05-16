@@ -194,8 +194,8 @@ print("Analyzing time (s):", time.time()-start)
 df = pd.DataFrame(results, columns = ["BadFlag", "SigmaOutNoise", "Baseline", "Epeakcharge", "risetime", "AmpMin"])
 df.to_csv(result_path+"/data_Run_"+run_num+".csv",sep=";")
 #drop bad signals
-baddf=df[df["BadFlag"]==True]
-df = df.drop(df[df["BadFlag"]==True].index)
+#baddf=df[df["BadFlag"]==True]
+#df = df.drop(df[df["BadFlag"]==True].index)
 sigma,noises, echarges, risetime, amplitudes=df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["Epeakcharge"].tolist(),df["risetime"].tolist(),df["AmpMin"].tolist()
 
 if len(sigma)!=0:
@@ -205,7 +205,7 @@ if len(sigma)!=0:
     hist(echarges, "Epeak Charge (C)")
     hist(sigma, "Min sigma outside noise")
     hist(risetime, "Risetime (s)")
-    print("Fraction bad WFs:", len(baddf["BadFlag"])/len(waves))
+    #print("Fraction bad WFs:", len(baddf["BadFlag"])/len(waves))
     hist2D("EchargeRisetimeCorr", risetime,echarges,"Risetime(s)","Echarge(C)")
     hist2D("AmpChargeCorr", amplitudes,echarges,"Amplitudes(-V)","Echarge(C)")
     graph(np.arange(0,len(amplitudes),1),amplitudes,"Time(a.u.)","Amplitudes(-V)")
