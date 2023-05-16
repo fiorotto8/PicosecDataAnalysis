@@ -229,6 +229,6 @@ if args.writecsv is None:
     f = open(csv_path+"resultsPE.csv", "a") 
     #header=['Run NUM','RUN TYPE','MEAN RISETIME','ERR RISETIME','ARITMETIC MEAN CHARGE','CHARGE FIT','ERR CHARGE','CHI2/NDF','ARITMETIC MEAN AMPLITUDE','AMPLITUDE FIT','ERR AMPLITUDE','CHI2/NDF','survived Waves from cuts']
  
-    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARITMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
+    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
+    f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(baddf["BadFlag"])/len(waves)))+"\n")
     f.close()
