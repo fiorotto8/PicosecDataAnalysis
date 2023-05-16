@@ -32,7 +32,7 @@ Later `run_path` and `result_path` are updated depending on the `-r` value speci
 
 After is created the results folder, if it doesn't exist yet, and a file ROOT named `result_path/Run_*run_num*.root`.
 
-Then is take the number of files to analyse. If is not specified by the user the program will analyse every file in the selected run. Files are sorted by channel number (the default channel is 2). 
+Then is take the number of files to analyze. If is not specified by the user the program will analyze every file in the selected run. Files are sorted by channel number (the default channel is 2). 
 
 After are taked the files separately and is used the class `ScopeSequence` that is defined in `waveform`. Initialising a `ScopeSequence` object defines automatically some wave and scope parameters like impedance and point per wave. With the function `GetWaves()` every wave is taken singularly. The time elapsed collecting waves is computed and shown in the terminal.
 
@@ -40,7 +40,31 @@ Later is created the `RawWaveForm` folder in the main ROOT directory.
 
 Then is started the analysis. 
 
+- no cuts are made to take also the noise pedestal
+- first the gaussian on the maximum to get the pedestal then the gaus+polya fit
 
+If waves aren't drawn the analysis is parallelysed.
+At the end, the results are stored in a data frame. 
+The columns of the data frame are:
+- `BadFlag`, which is a boolean and is True when the signal is bad, in this program should be always False since there are no cuts,
+ - `SigmaOutNoise`, which is the difference between the signal peak and the pedestal in terms of standard deviation,
+ - `Baseline` which is the measure of the noise,
+ - `Epeakcharge`, which is the maximum of the peak 
+ - `RiseTime`
+ - `AmpMin`, which is the time of start of the electron peak.
+
+
+
+ Then histograms are created with the results obtained for noises, baseline, charge, differences between signal and noise and rise time.
+
+ Once created, the amplitude histograms are fitted, first with a gaussian in a small range around the peak to get the pedestal, then the fit parameters are used as starting parameters for a gaussian+polya fit.
+ If option `-po` is activated the fit is done only with the polya.
+
+ After that the code will append the main results in a `.csv` file named `resultsPE`.
+
+
+
+ 
 
 
 
@@ -48,7 +72,7 @@ Then is started the analysis.
 
 
 # Analyze Timing Run
-The code is divided into two parts for easy processing of data. `process_TIMErun.py` process the run and output a ROOT file with the ouput. The `analyze_TIMErun.py` take the raw data and applies the cut and performs the plotting.
+The code is divided into two parts for easy processing of data. `process_TIMErun.py` process the run and output a ROOT file with the output. The `analyze_TIMErun.py` take the raw data and applies the cut and performs the plotting.
 ## Processing
 For now, no cuts are made so all the waveforms are passed.
 
