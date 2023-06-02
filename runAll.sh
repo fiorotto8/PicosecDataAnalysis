@@ -1,5 +1,17 @@
 #!/bin/bash
 
+#For alexandra Pool2
+<<com
+python3 analyze_PErun.py -r 133 -c 4
+python3 analyze_PErun.py -r 135 -c 4
+python3 analyze_PErun.py -r 136 -c 4
+python3 analyze_PErun.py -r 161 -c 4
+python3 analyze_PErun.py -r 162 -c 4
+python3 analyze_SPErun.py -r 163 -c 4
+python3 analyze_SPErun.py -r 164 -c 4
+com
+
+
 #single photoelectron no tracking
 #firsts SPEs B4C 7nm
 <<com
@@ -37,26 +49,26 @@ com
 
 #photoelectrons from beam
 #first PE run B4c 7nm
-#<<com
+<<com
 python3 analyze_PErun.py -r 323 -c 4
 python3 analyze_PErun.py -r 324 -c 4
 python3 analyze_PErun.py -r 329 -c 4
 python3 analyze_PErun.py -r 330 -c 4
-#com
+com
 #second PE run B4c 7nm
-#<<com
+<<com
 python3 analyze_PErun.py -r 373 -c 4
 python3 analyze_PErun.py -r 374 -c 4
 python3 analyze_PErun.py -r 375 -c 4
 python3 analyze_PErun.py -r 376 -c 4
-#com
+com
 
 #CsI PEs
-#<<com
+<<com
 python3 analyze_PErun.py -r 389 -c 4
 python3 analyze_PErun.py -r 390 -c 4
 python3 analyze_PErun.py -r 391 -c 4
-#com
+com
 
 #timing runs
 <<com

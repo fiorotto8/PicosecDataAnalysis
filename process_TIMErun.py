@@ -308,7 +308,7 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         #else:
         data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.risetime,
                     track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.risetime])
-        
+
         """
         #OLD
         cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
@@ -396,5 +396,4 @@ for td in timeDIFF:
     if td>=TDmin and td<=TDmax:
         timeDiffSel.append(td)
 timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=1000,write=True)
-
 """

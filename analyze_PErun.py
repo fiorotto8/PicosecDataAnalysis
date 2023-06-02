@@ -159,17 +159,16 @@ def Canvas1D(plot):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
-#parser.add_argument('-d','--draw',help='if 1 is drawing all waveforms defualut is 0', action='store', default='0')
 parser.add_argument('-b','--batch',help='disable the batch mode of ROOT', action='store', default=None)
 parser.add_argument('-c','--channel',help='chennel to analyze default=2', action='store', default="2")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
-#parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
-#parser.add_argument('-po','--polya',help='Enable the complex polya fit', action='store', default="0")
 parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=2 mm', action='store',  default=2)
 parser.add_argument('-d','--draw',help='any value allow to draw all waveform default None', action='store', default=None)
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
 parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default=None)
+parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
+parser.add_argument('-all','--analyseAll',help='Enable the analyis of all the waveforms also the one not reconstructed', action='store', default=None)
 
 args = parser.parse_args()
 
@@ -180,10 +179,6 @@ result_path=result_path+run_num+"/"
 #check the active channels
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
-active_channels=[0,0,0,0]
-for i in range(4):
-    if any("C"+str(i+1) in f for f in files):
-        active_channels[i]=1
 print("################Analysing Run"+run_num+"################")
 
 #check if folder exist, if not create it
@@ -208,13 +203,6 @@ files_trk=[item for item in files if 'C3' in item]
 files_signal.sort()
 files_trk.sort()
 
-#remove the 0000 sequence
-#IN A FUTURE VERSION MAYBE CHECK IF THIS IS NEEDED!!!
-    #it can happen that the first sequence is saved wrongly
-    #if you do not clear the memory with of the scope with a stop/normal/stop/normal it saves the sequence of the previour run
-#files_signal=[item for item in files_signal if "00000" not in item]
-#files_trk=[item for item in files_trk if '00000' not in item]
-
 print("Colletting waves")
 for i in tqdm.tqdm(range(len(files_signal[:num]))):
     Seq=wf.ScopeSequence(run_path+files_signal[i],"track_"+args.name)
@@ -222,8 +210,8 @@ for i in tqdm.tqdm(range(len(files_signal[:num]))):
     Seq_trk=wf.ScopeSequence(run_path+files_trk[i],"tracker_"+args.name)
     waves_trk.extend(Seq_trk.GetWaves())
 
-noises, echarges, amplitudes, bad,notReco, sigma, risetime, gain, test0, test1, test2=[] ,[],[], [], [],[],[],[],[],[],[]
-ID,x,y=[],[],[]
+#noises, amplitudes, sigma, risetime, test0, test1, test2=[] ,[],[], [], [],[],[]
+#ID,x,y=[],[],[]
 
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
@@ -234,38 +222,110 @@ track_info=track_info.set_index(track_info.columns[0])
 main.mkdir("RawWaveforms")
 main.cd("RawWaveforms")
 print("Analyzing")
+results=[]
+
+def AnalWave(waveT,waveV,name):
+    signal=wf.ScopeSignalSlow(waveT,waveV,name,sigma_thr=0,sigmaBad=0,risetimeCut=0,badDebug=args.debugBad,EpeakBadDisable=True)
+    return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.risetime,-1*signal.Ampmin]
+
 for i in tqdm.tqdm(range(len(waves))):
-#for i in range(len(waves)):
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
-    #track.WaveGraph(write=True)
-    ID.append(track.ID)
-    #get coordinates and discard the non reconstructed events
     if track.ID not in track_info.index:
-        notReco.append(i)
-        continue
-    else:
-        #print(ID[i],x,y)
-        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), risetimeCut=50E-9)
-        if args.draw is not None:
-            #signal.WaveGraph().Write()
-            signal.WaveSave(EpeakLines=True,Write=True)
-        #check if signal is bad
-        if signal.badSignalFlag==True:
-            bad.append(i)
-            continue
+        if args.analyseAll is not None:
+            results.append([track.ID in track_info.index]+[None,None]+AnalWave(waves[i]["T"],waves[i]["V"],args.name+str(i)))
         else:
-            x.append(track_info[track_info.columns[0]][track.ID])
-            y.append(track_info[track_info.columns[1]][track.ID])
+            results.append([track.ID in track_info.index]+[None,None,None,None,None,None,None])
+    else:
+        results.append([track.ID in track_info.index]+[track_info[track_info.columns[0]][track.ID]]+[track_info[track_info.columns[1]][track.ID]]+AnalWave(waves[i]["T"],waves[i]["V"],args.name+str(i)))
+    if args.draw is not None:
+        wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i)).WaveSave(EpeakLines=True, Write=True)
 
-        sigma.append(signal.SigmaOutNoise)
-        noises.append(signal.baseLine)
-        echarges.append(signal.EpeakCharge)
-        gain.append(signal.Gain)
-        risetime.append(signal.risetime)
-        amplitudes.append(-1*signal.Ampmin)
+#df contains all the data and they are saved
+df = pd.DataFrame(results, columns = ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"])
+df.to_csv(result_path+"/data_Run_"+run_num+".csv",sep=";")
+recofrac=(len(waves)-np.sum(df["Reco"]))/len(waves)
 
+main.mkdir("allData")
+main.cd("allData")
+sigma,noises, risetime, amplitudes=df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
 hist(noises, "Baseline")
+hist(amplitudes, "Amplitudes (-V)")
+hist(sigma, "Min sigma outside noise")
+hist(risetime, "Risetime (s)")
 
+#remove from df the non reco events and teh events out of the global radius
+df=df.drop(df[df["Reco"]==False].index)
+#cut on 12,5mm radius
+x_m,y_m=np.mean(df["X"].tolist()), np.mean(df["X"].tolist())
+df=df.drop(df[   (pow((df["X"]-x_m),2)+pow((df["Y"]-y_m),2))>pow(12.5,2)     ].index)
+
+main.mkdir("RecoData")
+main.cd("RecoData")
+x,y,sigma,noises, risetime, amplitudes=df["X"].tolist(),df["Y"].tolist(),df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
+
+badfrac=(np.sum(df["BadFlag"]))/len(x)
+lenBef=len(x)
+
+hist(x, "X (mm)")
+hist(y, "Y (mm)")
+hist(noises, "Baseline")
+hist(amplitudes, "Amplitudes (-V)")
+hist(sigma, "Min sigma outside noise")
+hist(risetime, "Risetime (s)")
+ampPlot=graph2D("Amplitudes map NoCut",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
+risetimePlot=graph2D("Risetime map NoCut",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
+sigmaPlot=graph2D("sigma map NoCut",x, y,sigma, "x (mm)", "y (mm)", "sigma (a.u.)")
+noisePlot=graph2D("noise map NoCut",x, y,noises, "x (mm)", "y (mm)", "noise (V)")
+Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0, max=50)
+Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+Canvas2D(sigmaPlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+Canvas2D(noisePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+
+#GEO CUT
+geo_cut=args.geo #mm round the max radius where the cherenkov come is still inside
+main.mkdir("GeoCut")
+main.cd("GeoCut")
+df=df.drop(df[   (pow((df["X"]-x_m),2)+pow((df["Y"]-y_m),2))>pow(geo_cut,2)     ].index)
+x,y,sigma,noises, risetime, amplitudes=df["X"].tolist(),df["Y"].tolist(),df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
+
+geofrac=(lenBef-len(x))/lenBef
+
+hist(x, "X (mm)")
+hist(y, "Y (mm)")
+hist(noises, "Baseline")
+hist(amplitudes, "Amplitudes (-V)")
+hist(sigma, "Min sigma outside noise")
+hist(risetime, "Risetime (s)")
+ampPlot=graph2D("Amplitudes map GeoCut",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
+risetimePlot=graph2D("Risetime map GeoCut",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
+sigmaPlot=graph2D("sigma map GeoCut",x, y,sigma, "x (mm)", "y (mm)", "sigma (a.u.)")
+noisePlot=graph2D("noise map GeoCut",x, y,noises, "x (mm)", "y (mm)", "noise (V)")
+Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0, max=50)
+Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+Canvas2D(sigmaPlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+Canvas2D(noisePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+
+main.cd()
+amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=200,bin="lin")
+
+if args.polya is not None:
+    b=amps.ComplexPolya(path=result_path)
+else:
+    b=amps.PolyaFit(save=True, path=result_path)
+
+print("Fraction of not Reco Events:",recofrac)
+print("Fraction of bad cut events (only reconstructed):", badfrac)
+print("Fraction of geo cut events (only reconstructed):", geofrac)
+print("Remaining fraction:", len(x)/len(waves))
+print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
+
+if args.writecsv is None:
+    f = open(csv_path+"resultsPE.csv", "a")
+    #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
+    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
+    f.close()
+
+"""
 #DRAWING CUT
 #calculate centroid of device by average
 x_m,y_m=np.mean(x), np.mean(y)
@@ -279,26 +339,24 @@ for i in range(len(x)):
 #perform cut
 for i in sorted(maskIDX_drawcut, reverse=True):
     del amplitudes[i]
-    del echarges[i]
-    del gain[i]
     del risetime[i]
     del x[i]
     del y[i]
+
+#datafraem with all the data
+data=pd.DataFrame({"X":x,"Y":y,"risetime":risetime,"amplitudes":amplitudes})
+data.to_csv(result_path+"data_"+str(run_num)+".csv",sep=";")
 
 main.mkdir("DRAW CUT")
 main.cd("DRAW CUT")
 print("Fraction not Reco events:", len(notReco)/len(waves))
 print("Fraction bad WFs:", len(bad)/(len(waves)-len(notReco)))
-echargePlot=graph2D("charge map DRAW CUT",x, y,echarges, "x (mm)", "y (mm)", "e-peak charge (C)")
 ampPlot=graph2D("Amplitudes map DRAW CUT",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
 risetimePlot=graph2D("Risetime map DRAW CUT",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
-Canvas2D(echargePlot,result_path,np.max(echarges),Np=50,min=0, max=50)
 Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0, max=50)
 Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
 
 hist(amplitudes, "Amplitudes (-V) DRAW CUT")
-hist(echarges, "Charge (C) DRAW CUT")
-hist(gain, "SinglePE Gain DRAW CUT")
 hist(sigma, "Min sigma outside noise DRAW CUT")
 hist(risetime, "Risetime (s) DRAW CUT")
 hist(x, "x distr DRAW CUT")
@@ -307,7 +365,7 @@ hist(y, "y_distr DRAW CUT")
 #CUTS
 #calculate centroid of device by average
 x_m,y_m=np.mean(x), np.mean(y)
-#geo_cut=1.5 
+#geo_cut=1.5
 geo_cut=args.geo #mm round the max radius where the cherenkov come is still inside
 maskIDX_geocut=[]#indeces to remove
 for i in range(len(x)):
@@ -318,11 +376,13 @@ for i in range(len(x)):
 #perform cut
 for i in sorted(maskIDX_geocut, reverse=True):
     del amplitudes[i]
-    del echarges[i]
-    del gain[i]
     del risetime[i]
     del x[i]
     del y[i]
+
+#datafraem with all the data in the circle
+dataCUT=pd.DataFrame({"X":x,"Y":y,"risetime":risetime,"amplitudes":amplitudes})
+dataCUT.to_csv(result_path+"CUTdata_"+str(run_num)+".csv",sep=";")
 
 print("Fraction of cut events:", len(x)/(len(waves)-len(notReco)-len(bad)))
 print("Fraction of remaining events:", len(x)/len(waves))
@@ -330,14 +390,10 @@ print("Fraction of remaining events:", len(x)/len(waves))
 main.mkdir("GEO CUT")
 main.cd("GEO CUT")
 hist(amplitudes, "Amplitudes (-V) GEO CUT")
-hist(gain, "SinglePE Gain GEO CUT")
 hist(risetime, "Risetime (s) GEO CUT")
-hist(echarges, "Charge (C) GEO CUT")
 
-echargePlot=graph2D("charge map GEO CUT",x, y,echarges, "x (mm)", "y (mm)", "e-peak charge (C)")
 ampPlot=graph2D("Amplitudes map GEO CUT",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
 risetimePlot=graph2D("Risetime map GEO CUT",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
-Canvas2D(echargePlot,result_path,np.max(echarges),Np=50,min=0,max=50)
 Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0,max=50)
 Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0,max=50)
 
@@ -346,37 +402,19 @@ Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0,max=50)
 #However, to measure PE/MIP we do the ratio between mean charges so
 #it is just an offset
 main.cd()
-charge=wf.ChargeDistr(echarges, "Run"+str(run_num),channels=200,bin="lin")
 amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=200,bin="lin")
 
 if args.polya is not None:
-    a=charge.ComplexPolya(path=result_path)
     b=amps.ComplexPolya(path=result_path)
 else:
-    a=charge.PolyaFit(save=True, path=result_path)
     b=amps.PolyaFit(save=True, path=result_path)
 print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
+
+
 if args.writecsv is None:
     f = open(csv_path+"resultsPE.csv", "a")
-    #Run NUM;RUN TYPE;MEAN RISETIME;ERR RISETIME;ARIRMETIC MEAN CHARGE;CHARGE FIT;ERR CHARGE;CHI2/NDF;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(echarges))+";"+str(a[1])+";"+str(a[2])+";"+str(a[4])+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
+    #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
+    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
     f.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
+"""

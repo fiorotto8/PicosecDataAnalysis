@@ -1,6 +1,7 @@
-base_path="/media/bavia/Dati/May_2023/"
+#Davide PC
+base_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/May_202/"
 scope="Pool3/"
 run_path=base_path+"Runs/"+scope+"Run"
-result_path="../TestBeamResults/May_2023/Run"
+result_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/May_202/Results/Run"
 trk_path=base_path+"tracker/"
-csv_path="../TestBeamResults/May_2023/"
+csv_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/May_202/"
