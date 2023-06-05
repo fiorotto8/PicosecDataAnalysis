@@ -10,6 +10,10 @@ import os, glob
 import tqdm
 import math as m
 import time
+import gc
+import uproot
+gc.collect()
+
 
 file = open("path.txt", "r")
 for string in file:
@@ -222,199 +226,151 @@ track_info=track_info.set_index(track_info.columns[0])
 main.mkdir("RawWaveforms")
 main.cd("RawWaveforms")
 print("Analyzing")
+#columns will be ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"]
 results=[]
-
-def AnalWave(waveT,waveV,name):
-    signal=wf.ScopeSignalSlow(waveT,waveV,name,sigma_thr=0,sigmaBad=0,risetimeCut=0,badDebug=args.debugBad,EpeakBadDisable=True)
-    return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.risetime,-1*signal.Ampmin]
-
 for i in tqdm.tqdm(range(len(waves))):
+    result=[None,None,None,None,None,None,None,None]
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
-    if track.ID not in track_info.index:
-        if args.analyseAll is not None:
-            results.append([track.ID in track_info.index]+[None,None]+AnalWave(waves[i]["T"],waves[i]["V"],args.name+str(i)))
+    #track.WaveGraph(write=True)
+    #get coordinates and discard the non reconstructed events
+    if track.ID not in track_info.index and args.analyseAll is None:
+        result[0]=False
+    elif track.ID not in track_info.index and args.analyseAll is not None:
+        result[0]=False
+        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
+        if args.draw is not None:
+            signal.WaveSave(EpeakLines=True,Write=True)
+        #check if signal is bad
+        if signal.badSignalFlag==True:
+            result[3]=True
         else:
-            results.append([track.ID in track_info.index]+[None,None,None,None,None,None,None])
-    else:
-        results.append([track.ID in track_info.index]+[track_info[track_info.columns[0]][track.ID]]+[track_info[track_info.columns[1]][track.ID]]+AnalWave(waves[i]["T"],waves[i]["V"],args.name+str(i)))
-    if args.draw is not None:
-        wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i)).WaveSave(EpeakLines=True, Write=True)
+            result[3]=False
+        result[4]=(signal.SigmaOutNoise)
+        result[5]=(signal.baseLine)
+        result[6]=(signal.risetime)
+        result[7]=(-1*signal.Ampmin)
+    elif track.ID in track_info.index:
+        result[0]=True
+        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
+        if args.draw is not None:
+            signal.WaveSave(EpeakLines=True,Write=True)
+        #check if signal is bad
+        if signal.badSignalFlag==True:
+            result[3]=True
+        else:
+            result[3]=False
+        result[1]=(track_info[track_info.columns[0]][track.ID])
+        result[2]=(track_info[track_info.columns[1]][track.ID])
+        result[4]=(signal.SigmaOutNoise)
+        result[5]=(signal.baseLine)
+        result[6]=(signal.risetime)
+        result[7]=(-1*signal.Ampmin)
+    results.append(result)
 
 #df contains all the data and they are saved
 df = pd.DataFrame(results, columns = ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"])
 df.to_csv(result_path+"/data_Run_"+run_num+".csv",sep=";")
+#get frac for quality
 recofrac=(len(waves)-np.sum(df["Reco"]))/len(waves)
-
+#cut on processed
 main.mkdir("allData")
 main.cd("allData")
+#drop rows with no data in them (other wise if running with the -all option OFF nothing will be dispalyed)
+df = df[df['Baseline'].notna()]
+#write uncut data (all data that have been processed)
+file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
+file["Tree"]=df
+#get lists
 sigma,noises, risetime, amplitudes=df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
+#draw
 hist(noises, "Baseline")
 hist(amplitudes, "Amplitudes (-V)")
-hist(sigma, "Min sigma outside noise")
+hist(sigma, "Min sigma outside noise",channels=1000)
 hist(risetime, "Risetime (s)")
+hist2D("risetimeVSamplitude", amplitudes,risetime,"Ampltiude(-V)","Risetime(s)")
+graph(amplitudes,risetime,"Ampltiude(-V)","Risetime(s)")
 
+#RECO CUT
+main.mkdir("RecoData")
+main.cd("RecoData")
 #remove from df the non reco events and teh events out of the global radius
 df=df.drop(df[df["Reco"]==False].index)
 #cut on 12,5mm radius
 x_m,y_m=np.mean(df["X"].tolist()), np.mean(df["X"].tolist())
 df=df.drop(df[   (pow((df["X"]-x_m),2)+pow((df["Y"]-y_m),2))>pow(12.5,2)     ].index)
-
-main.mkdir("RecoData")
-main.cd("RecoData")
+#get lsits
 x,y,sigma,noises, risetime, amplitudes=df["X"].tolist(),df["Y"].tolist(),df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
-
-badfrac=(np.sum(df["BadFlag"]))/len(x)
+#get lenght for quality check
 lenBef=len(x)
-
+#draw
 hist(x, "X (mm)")
 hist(y, "Y (mm)")
 hist(noises, "Baseline")
 hist(amplitudes, "Amplitudes (-V)")
-hist(sigma, "Min sigma outside noise")
+hist(sigma, "Min sigma outside noise",channels=1000)
 hist(risetime, "Risetime (s)")
+hist2D("risetimeVSamplitude", amplitudes,risetime,"Ampltiude(-V)","Risetime(s)")
+graph(amplitudes,risetime,"Ampltiude(-V)","Risetime(s)")
 ampPlot=graph2D("Amplitudes map NoCut",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
 risetimePlot=graph2D("Risetime map NoCut",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
 sigmaPlot=graph2D("sigma map NoCut",x, y,sigma, "x (mm)", "y (mm)", "sigma (a.u.)")
 noisePlot=graph2D("noise map NoCut",x, y,noises, "x (mm)", "y (mm)", "noise (V)")
 Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0, max=50)
 Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
-Canvas2D(sigmaPlot,result_path,np.max(risetime),Np=50,min=0, max=50)
-Canvas2D(noisePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+Canvas2D(sigmaPlot,result_path,np.max(sigma),Np=50,min=0, max=50)
+Canvas2D(noisePlot,result_path,np.max(noises),Np=50,min=0, max=50)
 
-#GEO CUT
+#GEO+BAD CUT
 geo_cut=args.geo #mm round the max radius where the cherenkov come is still inside
-main.mkdir("GeoCut")
-main.cd("GeoCut")
+main.mkdir("GeoBadCut")
+main.cd("GeoBadCut")
+#cut on geo and on bad
 df=df.drop(df[   (pow((df["X"]-x_m),2)+pow((df["Y"]-y_m),2))>pow(geo_cut,2)     ].index)
+df=df.drop(df[   df["BadFlag"]==True    ].index)
+#get lists
 x,y,sigma,noises, risetime, amplitudes=df["X"].tolist(),df["Y"].tolist(),df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
-
+#get frac for quality
 geofrac=(lenBef-len(x))/lenBef
-
+badfrac=(np.sum(df["BadFlag"]))/len(x)
+#draw
 hist(x, "X (mm)")
 hist(y, "Y (mm)")
 hist(noises, "Baseline")
 hist(amplitudes, "Amplitudes (-V)")
 hist(sigma, "Min sigma outside noise")
 hist(risetime, "Risetime (s)")
-ampPlot=graph2D("Amplitudes map GeoCut",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
-risetimePlot=graph2D("Risetime map GeoCut",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
-sigmaPlot=graph2D("sigma map GeoCut",x, y,sigma, "x (mm)", "y (mm)", "sigma (a.u.)")
-noisePlot=graph2D("noise map GeoCut",x, y,noises, "x (mm)", "y (mm)", "noise (V)")
+hist2D("risetimeVSamplitude", amplitudes,risetime,"Ampltiude(-V)","Risetime(s)")
+graph(amplitudes,risetime,"Ampltiude(-V)","Risetime(s)")
+ampPlot=graph2D("Amplitudes map GeoBadCut",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
+risetimePlot=graph2D("Risetime map GeoBadCut",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
+sigmaPlot=graph2D("sigma map GeoBadCut",x, y,sigma, "x (mm)", "y (mm)", "sigma (a.u.)")
+noisePlot=graph2D("noise map GeoBadCut",x, y,noises, "x (mm)", "y (mm)", "noise (V)")
 Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0, max=50)
 Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
-Canvas2D(sigmaPlot,result_path,np.max(risetime),Np=50,min=0, max=50)
-Canvas2D(noisePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
+Canvas2D(sigmaPlot,result_path,np.max(sigma),Np=50,min=0, max=50)
+Canvas2D(noisePlot,result_path,np.max(noises),Np=50,min=0, max=50)
 
+#fit the spectrum (usual just the normal polya without gaus noise)
 main.cd()
 amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=200,bin="lin")
-
 if args.polya is not None:
     b=amps.ComplexPolya(path=result_path)
 else:
     b=amps.PolyaFit(save=True, path=result_path)
 
 print("Fraction of not Reco Events:",recofrac)
-print("Fraction of bad cut events (only reconstructed):", badfrac)
-print("Fraction of geo cut events (only reconstructed):", geofrac)
+print("Fraction of geo cut events (reconstructed):", geofrac)
+print("Fraction of bad cut events (reconstructed and geoCut):", badfrac)
 print("Remaining fraction:", len(x)/len(waves))
 print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
-if args.writecsv is None:
-    f = open(csv_path+"resultsPE.csv", "a")
-    #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
-    f.close()
-
-"""
-#DRAWING CUT
-#calculate centroid of device by average
-x_m,y_m=np.mean(x), np.mean(y)
-draw_cut=100#mm radius from the center
-maskIDX_drawcut=[]#indeces to remove
-for i in range(len(x)):
-    if (pow((x[i]-x_m),2)+pow((y[i]-y_m),2))>draw_cut:
-        maskIDX_drawcut.append(i)
-    else:
-        continue
-#perform cut
-for i in sorted(maskIDX_drawcut, reverse=True):
-    del amplitudes[i]
-    del risetime[i]
-    del x[i]
-    del y[i]
-
-#datafraem with all the data
-data=pd.DataFrame({"X":x,"Y":y,"risetime":risetime,"amplitudes":amplitudes})
-data.to_csv(result_path+"data_"+str(run_num)+".csv",sep=";")
-
-main.mkdir("DRAW CUT")
-main.cd("DRAW CUT")
-print("Fraction not Reco events:", len(notReco)/len(waves))
-print("Fraction bad WFs:", len(bad)/(len(waves)-len(notReco)))
-ampPlot=graph2D("Amplitudes map DRAW CUT",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
-risetimePlot=graph2D("Risetime map DRAW CUT",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
-Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0, max=50)
-Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0, max=50)
-
-hist(amplitudes, "Amplitudes (-V) DRAW CUT")
-hist(sigma, "Min sigma outside noise DRAW CUT")
-hist(risetime, "Risetime (s) DRAW CUT")
-hist(x, "x distr DRAW CUT")
-hist(y, "y_distr DRAW CUT")
-
-#CUTS
-#calculate centroid of device by average
-x_m,y_m=np.mean(x), np.mean(y)
-#geo_cut=1.5
-geo_cut=args.geo #mm round the max radius where the cherenkov come is still inside
-maskIDX_geocut=[]#indeces to remove
-for i in range(len(x)):
-    if (pow((x[i]-x_m),2)+pow((y[i]-y_m),2))>pow(geo_cut,2):
-        maskIDX_geocut.append(i)
-    else:
-        continue
-#perform cut
-for i in sorted(maskIDX_geocut, reverse=True):
-    del amplitudes[i]
-    del risetime[i]
-    del x[i]
-    del y[i]
-
-#datafraem with all the data in the circle
-dataCUT=pd.DataFrame({"X":x,"Y":y,"risetime":risetime,"amplitudes":amplitudes})
-dataCUT.to_csv(result_path+"CUTdata_"+str(run_num)+".csv",sep=";")
-
-print("Fraction of cut events:", len(x)/(len(waves)-len(notReco)-len(bad)))
-print("Fraction of remaining events:", len(x)/len(waves))
-
-main.mkdir("GEO CUT")
-main.cd("GEO CUT")
-hist(amplitudes, "Amplitudes (-V) GEO CUT")
-hist(risetime, "Risetime (s) GEO CUT")
-
-ampPlot=graph2D("Amplitudes map GEO CUT",x, y,amplitudes, "x (mm)", "y (mm)", "Amplitude (V)")
-risetimePlot=graph2D("Risetime map GEO CUT",x, y,risetime, "x (mm)", "y (mm)", "Risetime (s)")
-Canvas2D(ampPlot,result_path,np.max(amplitudes),Np=50,min=0,max=50)
-Canvas2D(risetimePlot,result_path,np.max(risetime),Np=50,min=0,max=50)
-
-#with the slow amplifier the charge is not exactly the charge beacuse
-#the amplifier Gain is not exacly know (well we can calibrate it)
-#However, to measure PE/MIP we do the ratio between mean charges so
-#it is just an offset
-main.cd()
-amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=200,bin="lin")
-
-if args.polya is not None:
-    b=amps.ComplexPolya(path=result_path)
-else:
-    b=amps.PolyaFit(save=True, path=result_path)
-print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
-
-
+#write root file with cut data
+file1=uproot.recreate(result_path+"/RawCUT_Run_"+run_num+".root")
+file1["Tree"]=df
 
 if args.writecsv is None:
     f = open(csv_path+"resultsPE.csv", "a")
     #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
     f.close()
-"""
+gc.collect()

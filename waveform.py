@@ -55,6 +55,11 @@ def GetStdErr(arr):
     #print(D4)
     return np.sqrt( (D4-std**4)/(N-1) )/(2*std)
 
+def find_nearestIdx(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
 class ScopeSequence:
     def __init__(self, file, name, scopeImpedence=50, AmplifierGain=100,SampRate=10E9):
         self.name = name
@@ -209,7 +214,6 @@ class ScopeSignalCividec:
             self.badSignalFlag = True
             if badDebug is not None: print("bad from sigmaOutNoise (noise)")
         """
-        
         #check if flicker noise is present
         PosPoints=[p for p in self.y[self.y>0]]
         if len(PosPoints)<1:
@@ -575,12 +579,12 @@ class ScopeSignalCividec:
         return -sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
 
 class ScopeSignalSlow:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,sigma_thr=2, sigmaBad=5, risetimeCut=2E-9, badDebug=None, EpeakBadDisable=False):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,sigma_thr=2, sigmaBad=5, risetimeCut=None, badDebug=None, EpeakBadDisable=False):
         self.badSignalFlag = False
-        
+
         self.badDebug=badDebug
         self.EpeakBadDisable=EpeakBadDisable
-        
+
         self.name = name
         self.noiseHisto = None
 
@@ -606,7 +610,7 @@ class ScopeSignalSlow:
         self.baseLineStd=self.GetStdNoise()
         self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
 
-        if self.SigmaOutNoise<sigmaBad: 
+        if self.SigmaOutNoise<sigmaBad:
             self.badSignalFlag = True
             if badDebug is not None: print("bad because of sigma not out noise")
 
@@ -622,17 +626,21 @@ class ScopeSignalSlow:
         self.Epeakmin, self.EpeakminIdx=self.GetEpeakMin(sigma=sigma_thr)
         self.tFitMin=self.x[self.EpeakminIdx]
         self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax(sigma=sigma_thr)
-        self.risetime= self.RiseTimeData()
+        #risetime 90 to 10 is not eprfect 
+        if self.badSignalFlag==True:
+            self.risetime= self.RiseTimeData()
+        else:
+            self.risetime=self.RiseTime1090()
 
-        if self.risetime<risetimeCut:
-            self.badSignalFlag = True
-            if badDebug is not None: print("bad because of risetime cut")
+        if risetimeCut is not None:
+            if self.risetime<risetimeCut:
+                self.badSignalFlag = True
+                if badDebug is not None: print("bad because of risetime cut")
 
-
-        self.EpeakCharge, self.Gain=self.GetGain()
+        #self.EpeakCharge, self.Gain=self.GetGain()
 
     def isBad(self):
-        self.badSignalFlag = True    
+        self.badSignalFlag = True
 
     def __str__(self):
         return self.GetName()
@@ -717,6 +725,25 @@ class ScopeSignalSlow:
     def RiseTimeData(self):
         return self.tFitMax-self.tFitMin
 
+    def RiseTime1090(self):
+        #print("CULO",self.Ampmin)
+        sub_y=self.y[self.x<=self.tFitMax]
+        sub_x=self.x[self.x<=self.tFitMax]
+        y10,y90=0.1*self.Ampmin, 0.9*self.Ampmin
+        i=1
+        while sub_y[-i]<=y90:
+            i=i+1
+        x90,y90found=sub_x[-i],sub_y[-i]
+        i=1
+        while sub_y[-i]<=y10:
+            i=i+1
+
+        x10,y10found=sub_x[-i],sub_y[-i]
+        #print("to find",y10,y90)
+        #print("found",y10found,y90found)
+        #print("found+1",self.y[start-i])
+        #print(x90,x10,self.tFitMax,self.tFitMin)
+        return x90-x10
 
     def GetNoiseList(self,fraction=0.5):
         """

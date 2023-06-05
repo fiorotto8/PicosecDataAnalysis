@@ -10,7 +10,9 @@ import os, glob
 import tqdm
 import math as m
 import time
-import uproot 
+import uproot
+import gc
+gc.collect()
 
 file = open("path.txt", "r")
 for string in file:
@@ -342,58 +344,4 @@ dfDUT = pd.DataFrame(data,columns=cols)
 
 file["Tree"]=dfDUT
 
-
-"""
-#PART OF THE OLD SCRIPT
-
-main=ROOT.TFile(result_path+"/Waves_Run_"+run_num+".root","RECREATE")#root file creation
-
-cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
-
-#create dataframe and plot results
-main.mkdir("NO CUT PLOT")
-main.cd("NO CUT PLOT")
-dfDUT = pd.DataFrame(dataDUT,columns=cols)
-dfREF = pd.DataFrame(dataREF,columns=cols)
-
-rDUT,thetaDUT=cart2pol(dfDUT["X"],dfDUT["Y"])
-rREF,thetaREF=cart2pol(dfREF["X"],dfREF["Y"])
-dfDUT=dfDUT.assign(radius=rDUT,angle=thetaDUT)
-dfREF=dfREF.assign(radius=rREF,angle=thetaREF)
-
-
-
-
-plotsDF(dfDUT,"DUT NO CUT")
-plotsDF(dfREF,"REF NO CUT")
-
-timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
-hist(timeDIFF, "time difference NO CUT",channels=500)
-
-xmDUT, ymDUT, xmREF, ymREF=np.mean(dfDUT["X"]),np.mean(dfDUT["Y"]),np.mean(dfREF["X"]),np.mean(dfREF["Y"])
-geo_cut=2#mm radius from the center both the detector!
-
-drop_indexDUT,drop_indexREF=[],[]
-drop_index=dfDUT[dfDUT["radius"] > geo_cut].index
-drop_index.union(dfDUT[dfREF["radius"] > geo_cut].index)
-#drop_indexREF=dfREF[pow((dfREF["X"]-xmREF),2)+pow((dfREF["Y"]-ymREF),2) > draw_cut].index
-eventDrawCut=1-len(drop_index)/(len(dfDUT["X"]))
-print("Survival after GEO cut:",eventDrawCut)
-dfDUT,dfREF = dfDUT.drop(drop_index),dfREF.drop(drop_index)
-
-main.mkdir("GEO CUT PLOT")
-main.cd("GEO CUT PLOT")
-plotsDF(dfDUT,"DUT GEO CUT")
-plotsDF(dfREF,"REF GEO CUT")
-timeDIFF=dfDUT["SAT"]-dfREF["SAT"]
-hist(timeDIFF, "time difference GEO CUT",channels=100)
-
-TimeCut=0.3E-9
-#try to cut
-timeDiffSel, TDmin, TDmax=[], np.median(timeDIFF)-3*TimeCut, np.median(timeDIFF)+3*TimeCut
-for td in timeDIFF:
-    #print(td,TDmax,TDmin)
-    if td>=TDmin and td<=TDmax:
-        timeDiffSel.append(td)
-timeHist=hist(timeDiffSel, "time difference GEO CUT",channels=1000,write=True)
-"""
+gc.collect()

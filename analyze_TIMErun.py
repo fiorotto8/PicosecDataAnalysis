@@ -11,6 +11,8 @@ import tqdm
 import math as m
 import time
 import uproot
+import gc
+gc.collect()
 
 file = open("path.txt", "r")
 for string in file:
@@ -241,3 +243,4 @@ filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10  
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
 OUTfile["Tree"]=filteredDF
+gc.collect()

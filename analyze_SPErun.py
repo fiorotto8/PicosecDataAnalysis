@@ -11,6 +11,8 @@ import tqdm
 import math as m
 import time
 import multiprocess as mp
+import gc
+gc.collect()
 
 file = open("path.txt", "r")
 for string in file:
@@ -130,7 +132,7 @@ print("Analyzing...")
 start=time.time()
 i=0
 def AnalWave(waveT,waveV,name):
-    signal=wf.ScopeSignalSlow(waveT,waveV,name,sigma_thr=0,sigmaBad=0,risetimeCut=0,badDebug=args.debugBad,EpeakBadDisable=True)
+    signal=wf.ScopeSignalSlow(waveT,waveV,name,sigmaBad=5,risetimeCut=None,badDebug=args.debugBad)
     return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.risetime,-1*signal.Ampmin]
 #if drawing cannot paralelize
 if args.draw is None:
@@ -154,9 +156,6 @@ print("Analyzing time (s):", time.time()-start)
 df = pd.DataFrame(results, columns = ["BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"])
 df.to_csv(result_path+"/data_Run_"+run_num+".csv",sep=";")
 
-#drop bad signals
-#baddf=df[df["BadFlag"]==True]
-#df = df.drop(df[df["BadFlag"]==True].index)
 sigma,noises, risetime, amplitudes=df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
 
 if len(sigma)!=0:
@@ -166,13 +165,11 @@ if len(sigma)!=0:
     hist(sigma, "Min sigma outside noise")
     hist(risetime, "Risetime (s)")
     #print("Fraction bad WFs:", len(baddf["BadFlag"])/len(waves))
-    hist2D("AmpltitudeRisetimeCorr", risetime,amplitudes,"Risetime(s)","Ampltiude(-V)")
+    hist2D("risetimeVSamplitude", amplitudes,risetime,"Risetime(s)","Ampltiude(-V)")
     graph(np.arange(0,len(amplitudes),1),amplitudes,"Time(a.u.)","Amplitudes(-V)")
 
-#with the slow amplifier the charge is not exactly the charge because
-#the amplifier Gain is not exactly known (well we can calibrate it)
-#However, to measure PE/MIP we do the ratio between mean charges so
-#it is jargs.writChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
+#we enver calibrated the amplfier so it not posisble to obtain the absolute charge
+#however by doing the average of the average ampltides from the polya fit we get the correct number of PE/MIP
 
 amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
 if args.polya is None:
@@ -186,3 +183,4 @@ if args.writecsv is None:
     #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"SPE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1)+"\n")
     f.close()
+gc.collect()

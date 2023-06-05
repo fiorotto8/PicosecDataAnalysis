@@ -14,7 +14,7 @@ com
 
 #single photoelectron no tracking
 #firsts SPEs B4C 7nm
-<<com
+#<<com
 python3 analyze_SPErun.py -r 313 -c 4
 python3 analyze_SPErun.py -r 315 -c 4
 python3 analyze_SPErun.py -r 317 -c 4
@@ -23,10 +23,10 @@ python3 analyze_SPErun.py -r 319 -c 4
 python3 analyze_SPErun.py -r 320 -c 4
 python3 analyze_SPErun.py -r 321 -c 4
 python3 analyze_SPErun.py -r 322 -c 4
-com
+#com
 
 #second SPEs B4C 7nm
-<<com
+#<<com
 python3 analyze_SPErun.py -r 363 -c 4
 python3 analyze_SPErun.py -r 364 -c 4
 python3 analyze_SPErun.py -r 365 -c 4
@@ -35,40 +35,40 @@ python3 analyze_SPErun.py -r 367 -c 4
 python3 analyze_SPErun.py -r 368 -c 4
 python3 analyze_SPErun.py -r 369 -c 4
 python3 analyze_SPErun.py -r 370 -c 4
-com
+#com
 
 #CsI photoelctrons
-<<com
+#<<com
 python3 analyze_SPErun.py -r 383 -c 4
 python3 analyze_SPErun.py -r 384 -c 4
 python3 analyze_SPErun.py -r 385 -c 4
 python3 analyze_SPErun.py -r 386 -c 4
 python3 analyze_SPErun.py -r 387 -c 4
 python3 analyze_SPErun.py -r 388 -c 4
-com
+#com
 
 #photoelectrons from beam
 #first PE run B4c 7nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 323 -c 4
 python3 analyze_PErun.py -r 324 -c 4
 python3 analyze_PErun.py -r 329 -c 4
 python3 analyze_PErun.py -r 330 -c 4
-com
+#com
 #second PE run B4c 7nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 373 -c 4
 python3 analyze_PErun.py -r 374 -c 4
 python3 analyze_PErun.py -r 375 -c 4
 python3 analyze_PErun.py -r 376 -c 4
-com
+#com
 
 #CsI PEs
-<<com
+#<<com
 python3 analyze_PErun.py -r 389 -c 4
 python3 analyze_PErun.py -r 390 -c 4
 python3 analyze_PErun.py -r 391 -c 4
-com
+#com
 
 #timing runs
 <<com
