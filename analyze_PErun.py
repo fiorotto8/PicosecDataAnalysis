@@ -180,6 +180,7 @@ args = parser.parse_args()
 run_num=args.run
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
+print(run_path)
 #check the active channels
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
