@@ -185,7 +185,7 @@ parser = argparse.ArgumentParser(description='Analyze waveform from a certain Ru
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
 parser.add_argument('-b','--batch',help='Disable the batch mode of ROOT', action='store', default=None)
-parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="2")
+parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="4")
 parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want', action='store', default="test")
@@ -203,10 +203,6 @@ result_path=result_path+run_num+"/"
 print(run_path)
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
-active_channels=[0,0,0,0]
-for i in range(4):
-    if any("C"+str(i+1) in f for f in files):
-        active_channels[i]=1
 print("################Analysing Run"+run_num+"################")
 
 #check if folder exist, if not create it

@@ -183,7 +183,7 @@ def plotsDF(df, textOFF):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
-#parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
+parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
 
 args = parser.parse_args()
 
@@ -243,4 +243,12 @@ filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10  
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
 OUTfile["Tree"]=filteredDF
+
+if args.writecsv is None:
+    f = open(csv_path+"resultsTIME.csv", "a")
+    print(csv_path+"resultsTIME.csv")
+    #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
+    f.write("CULO")
+    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["particleTime"]))+"\n")
+    f.close()
 gc.collect()
