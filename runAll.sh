@@ -139,7 +139,7 @@ python3 process_TIMErun.py -r 400
 python3 process_TIMErun.py -r 401
 python3 process_TIMErun.py -r 402
 python3 process_TIMErun.py -r 403
-#com
+com
 
 #analyse timing runs
 #<<com
@@ -210,4 +210,4 @@ python3 analyze_TIMErun.py -r 400
 python3 analyze_TIMErun.py -r 401
 python3 analyze_TIMErun.py -r 402
 python3 analyze_TIMErun.py -r 403
-#com
+com

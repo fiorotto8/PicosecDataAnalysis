@@ -246,9 +246,8 @@ OUTfile["Tree"]=filteredDF
 
 if args.writecsv is None:
     f = open(csv_path+"resultsTIME.csv", "a")
-    print(csv_path+"resultsTIME.csv")
+    #print(csv_path+"resultsTIME.csv")
     #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write("CULO")
-    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["particleTime"]))+"\n")
+    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+"\n")
     f.close()
 gc.collect()
