@@ -71,7 +71,7 @@ python3 analyze_PErun.py -r 391 -c 4
 com
 
 #precess timing runs
-#<<com
+<<com
 python3 process_TIMErun.py -r 182 -cDUT 2
 python3 process_TIMErun.py -r 183 -cDUT 2
 python3 process_TIMErun.py -r 184 -cDUT 2
@@ -210,4 +210,4 @@ python3 analyze_TIMErun.py -r 400
 python3 analyze_TIMErun.py -r 401
 python3 analyze_TIMErun.py -r 402
 python3 analyze_TIMErun.py -r 403
-com
+#com

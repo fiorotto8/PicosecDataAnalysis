@@ -243,11 +243,11 @@ filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10  
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
 OUTfile["Tree"]=filteredDF
-
+events=len(filteredDF[filteredDF.columns[0]])
 if args.writecsv is None:
     f = open(csv_path+"resultsTIME.csv", "a")
     #print(csv_path+"resultsTIME.csv")
-    #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+"\n")
+    #Run NUM;RUN TYPE;MEAN AMPLITUDE;ERR AMPLITUDE;MEAN CAHRGE;ERR CHARGE;MEAN RISETIME;ERR RISETIME;TIME RESOLUTION;ERR TIME RESOLUTON;EVENTS
+    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.std(filteredDF["amplitudeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["echargeDUT"]))+";"+str(np.std(filteredDF["echargeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["risetimeDUT"])/np.sqrt(events))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+";"+str(events)+"\n")
     f.close()
 gc.collect()
