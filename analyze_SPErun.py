@@ -95,16 +95,17 @@ if run_num is None:
 run_path=run_path+run_num+"/"
 result_path=result_path+run_num+"/"
 
-#print(run_path)
+print(run_path)
 files=next(os.walk(run_path))[2]
 files=[f for f in files if '.trc' in f]
 
+run_num = run_num.replace('/','-')
 print("################Analysing Run"+run_num+"################")
 #check if folder exist, if not create it
 if not os.path.isdir(result_path):
     os.makedirs(result_path)
 
-main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")  #root file creation
+main=ROOT.TFile(result_path+"/Run_"+run_num+".root","RECREATE")  #root file creation standard one for testbeams
 if args.batch is None: ROOT.gROOT.SetBatch(True)
 
 e=1.6E-19

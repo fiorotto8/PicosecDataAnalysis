@@ -1239,18 +1239,18 @@ class ChargeDistr():
 
         #ploya fit with gaus fixed (not the amplitude)
         polyaTF1=ROOT.TF1("polyaTF1",'[0]*TMath::Power(1+[2],1+[2])/ROOT::Math::tgamma(1+[2])*TMath::Power(x/[1],[2])*TMath::Exp(-(1+[2])*x/[1])+gaus(3)' ,0,np.max(self.x))
-        polyaTF1.SetParameters(0.5*A,hist.GetMean(), 1,0.5*A,m,s)
+        polyaTF1.SetParameters(0.1*A,hist.GetMean(), 1,A,m,s)
         #polyaTF1.FixParameter(4,m)
+        #polyaTF1.FixParameter(5,s)
         #polyaTF1.SetParLimits(5,s*0.9,s*1.1)
         polyaTF1.SetParNames("Amplitude", "Gain", "theta", "A","m","s")
         if self.type=="Charge (C)":
             hist.Fit("polyaTF1","Q","",0,np.max(self.x))
             hist.Fit("polyaTF1","Q","",m-s,np.max(self.x))
         else:
-            #hist.Fit("polyaTF1","Q","",0,np.max(self.x))
             polyaTF1.SetParLimits(4,0.5*m, 1.5*m)
             polyaTF1.SetParLimits(5,0.5*s, 1.5*s)
-            #polyaTF1.SetParLimits(0,0.5*s, 1.5*s)
+            polyaTF1.SetParLimits(1,2*m,np.max(self.x))
             #polyaTF1.SetParLimits(1,0.5*s, 1.5*s)
             #polyaTF1.SetParLimits(2,0.5*s, 1.5*s)
             #polyaTF1.SetParLimits(3,0.5*s, 1.5*s)

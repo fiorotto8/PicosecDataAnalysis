@@ -6,9 +6,16 @@
 #trk_path=base_path+"tracker/"
 #csv_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/May_2023/"
 #Picosec PC
-base_path="/media/bavia/Dati/May_2023/"
-scope="Pool3/"
-run_path=base_path+"Runs/"+scope+"Run"
-result_path="/home/bavia/Documents/Picosec/TestBeamResults/May_2023/Run"
-trk_path=base_path+"tracker/"
-csv_path="/home/bavia/Documents/Picosec/TestBeamResults/May_2023/"
+#base_path="/media/bavia/Dati/May_2023/"
+#scope="Pool3/"
+##run_path=base_path+"Runs/"+scope+"Run"
+##result_path="/home/bavia/Documents/Picosec/TestBeamResults/May_2023/Run"
+#trk_path=base_path+"tracker/"
+#csv_path="/home/bavia/Documents/Picosec/TestBeamResults/May_2023/"
+#Local test RD51
+base_path="/home/bavia/Documents/Picosec/resistive/"
+scope=""
+run_path=base_path
+result_path=base_path+"Results/"
+#trk_path=base_path+"tracker/"
+csv_path=result_path

@@ -1,5 +1,18 @@
 #!/bin/bash
 
+#For Chiara Local
+#<<com
+python3 analyze_SPErun.py -r C103/A275C540/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C103/A275C550/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C103/A275C560/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C104/A275C540/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C104/A275C550/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C104/A275C560/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C105/A275C540/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C105/A275C550/noise+signal/ -c 1
+python3 analyze_SPErun.py -r C105/A275C560/noise+signal/ -c 1
+#com
+
 #For alexandra Pool2
 <<com
 python3 analyze_PErun.py -r 133 -c 4
@@ -48,7 +61,7 @@ python3 analyze_SPErun.py -r 388 -c 4
 com
 
 #photoelectrons from beam
-#first PE run B4c 7nm
+#irst PE run B4c 7nm
 <<com
 python3 analyze_PErun.py -r 323 -c 4
 python3 analyze_PErun.py -r 324 -c 4
@@ -142,7 +155,7 @@ python3 process_TIMErun.py -r 403
 com
 
 #analyse timing runs
-#<<com
+<<com
 python3 analyze_TIMErun.py -r 182
 python3 analyze_TIMErun.py -r 183
 python3 analyze_TIMErun.py -r 184
@@ -210,4 +223,4 @@ python3 analyze_TIMErun.py -r 400
 python3 analyze_TIMErun.py -r 401
 python3 analyze_TIMErun.py -r 402
 python3 analyze_TIMErun.py -r 403
-#com
+com
