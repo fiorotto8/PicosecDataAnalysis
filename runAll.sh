@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #For Chiara Local
-#<<com
+<<com
 python3 analyze_SPErun.py -r C103/A275C540/noise+signal/ -c 1
 python3 analyze_SPErun.py -r C103/A275C550/noise+signal/ -c 1
 python3 analyze_SPErun.py -r C103/A275C560/noise+signal/ -c 1
@@ -11,7 +11,7 @@ python3 analyze_SPErun.py -r C104/A275C560/noise+signal/ -c 1
 python3 analyze_SPErun.py -r C105/A275C540/noise+signal/ -c 1
 python3 analyze_SPErun.py -r C105/A275C550/noise+signal/ -c 1
 python3 analyze_SPErun.py -r C105/A275C560/noise+signal/ -c 1
-#com
+com
 
 #For alexandra Pool2
 <<com
