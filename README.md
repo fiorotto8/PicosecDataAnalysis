@@ -6,6 +6,7 @@ Tools for Picosec Analysis:
 - `analyze_PErun.py` is for the analysis of the multi-photo-electron response
 - `process_TIMErun.py` is for the processing of the time resolution runs
 - `analyze_TIMErun.py` is for the analysis of the timing runs after the processing
+- `FFTanalyzer.py` is useful to get the FFT spectrum of signals and noise (work in progress)
 
 ### Requirements
 

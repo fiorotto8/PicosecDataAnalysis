@@ -200,31 +200,31 @@ class ScopeSignalCividec:
         #find peak (needed for get the noise)
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
         self.tFitMax=self.x[self.AmpminIdx]
-        """
+
         if self.tFitMax>250E-9 or self.tFitMax<200E-9:
             self.badSignalFlag = True
             if badDebug is not None: print("bad becasue peak is not in [200,250]ns (noise)")
-        """
+
         #get noise
         self.baseLine=self.GetMeanNoise()
         self.baseLineStd=self.GetStdNoise()
         self.SigmaOutNoise=np.abs(self.Ampmin-self.baseLine)/self.baseLineStd
-        """
+
         if self.SigmaOutNoise<sigma:
             self.badSignalFlag = True
             if badDebug is not None: print("bad from sigmaOutNoise (noise)")
-        """
+
         #check if flicker noise is present
         PosPoints=[p for p in self.y[self.y>0]]
         if len(PosPoints)<1:
             self.PosStd=10
         else:
             self.PosStd=np.std(PosPoints)
-        """
+
         if thresPosStd is not None and self.PosStd>=thresPosStd:
             self.badSignalFlag = True
             if badDebug is not None: print("bad from PositiveStd")
-        """
+
         self.y=self.y-self.baseLine #baseline correction
         #get again the peak (probably not needed)
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
@@ -245,7 +245,7 @@ class ScopeSignalCividec:
 
         self.Integral=(np.sum(self.y)/self.AmplifierGain)*(self.scopeImpedence*self.sampling)
         self.EpeakCharge, self.Gain=self.GetGain()
-        
+
         self.risetime= self.RiseTimeData()
         self.fit=self.SigmoidFit()
 
@@ -361,9 +361,7 @@ class ScopeSignalCividec:
         inverse=self.GetInverseSigmoid(self.fit.GetParameter(0),self.fit.GetParameter(1),self.fit.GetParameter(2),b)
         start=inverse.Eval(0.1*self.fit.GetParameter(0))
         stop=inverse.Eval(0.9*self.fit.GetParameter(0))
-        
         return stop-start
-        
 
     def GetNoiseList(self,fraction=0.8):
         """
@@ -577,6 +575,30 @@ class ScopeSignalCividec:
         f=fraction
         D=delay# *1E-9
         return -sigma*np.log( ((1/f)-1) / ( m.exp(D/sigma) - (1/f) )  )+mu
+    #FFT
+    def GetFFT(self,tmin,tmax):
+        tempt,tempy = self.x[self.x>=tmin], -1*self.y[self.x>=tmin]
+        t,y = tempt[tempt<=tmax], tempy[tempt<=tmax]
+        timestep = self.sampling
+        yf = fftpack.fft(y)
+        xf = fftpack.fftfreq(len(t), d=timestep)
+        return xf[xf>0], np.abs(yf)[xf>0]
+
+    def GetPowerSpectrum(self,tmin,tmax, fcut=None):
+        xf, yfft = self.GetFFT(tmin,tmax)
+        xf, yf = xf[xf>0], np.log10(np.abs(yfft)**2)[xf>0]
+        if fcut is not None: xf, yf = xf[xf<fcut], yf[xf<fcut]
+        return xf, yf
+
+    def FreqFilter(self, freqmin=None, freqmax=None):
+        sample_freq, sig_fft = self.GetFFT()
+        filtered_freq = sig_fft.copy()
+        if freqmax is not None: filtered_freq[np.abs(sample_freq) > freqmax] = 0
+        if freqmin is not None: filtered_freq[np.abs(sample_freq) < freqmin] = 0
+        filtered_sig = fftpack.ifft(filtered_freq)
+        return self.x, filtered_sig
+
+
 
 class ScopeSignalSlow:
     def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,sigma_thr=2, sigmaBad=5, risetimeCut=None, badDebug=None, EpeakBadDisable=False):
