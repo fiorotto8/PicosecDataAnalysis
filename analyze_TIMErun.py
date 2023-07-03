@@ -184,6 +184,7 @@ def plotsDF(df, textOFF):
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
+parser.add_argument('-f','--freq',help='Lowpass filter cutoff frequency', action='store', default=None)
 
 args = parser.parse_args()
 
@@ -197,34 +198,34 @@ df=INfile["Tree"].arrays(library="pd")
 
 filteredDF=df
 
+#geometric cut
+DUTx_m,DUTy_m=np.mean(filteredDF["XDUT"]),np.mean(filteredDF["YDUT"])
+filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>4   ].index)
+#filteredDF=filteredDF[(df["XDUT"]-DUTx_m)**2+(df["YDUT"]-DUTy_m)**2<5]
+
+
+"""
 #cut on sigmoid mean
 #filteredDF=df[df["sigmoid meanDUT"]<240E-9]
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]<210E-9].index)
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>240E-9].index)
 
-
 #cut on risetime
 filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]>0.8E-9].index)
 filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]<0.5E-9].index)
-
+"""
 
 #cut on amplitude
 #filteredDF=filteredDF.drop(filteredDF[filteredDF["amplitudeDUT"]<15E-3].index)
 
-
-#geometric cut
-DUTx_m,DUTy_m=np.mean(filteredDF["XDUT"]),np.mean(filteredDF["YDUT"])
-filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>4   ].index)
-
-#filteredDF=filteredDF[(df["XDUT"]-DUTx_m)**2+(df["YDUT"]-DUTy_m)**2<5]
-
-
+#fraction and delay setting
 f=0.2
 Ddut=np.mean(filteredDF["risetimeDUT"])*(1-f)
 Dref=np.mean(filteredDF["risetimeREF"])*(1-f)
 #Dref, Ddut=0.5E-9,0.5E-9
 #print(Dref, Ddut)
 
+#sat determination
 satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filteredDF["sigmoid sigmaDUT"]) - (1/f) )  )+filteredDF["sigmoid meanDUT"]
 satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
 
@@ -236,18 +237,19 @@ filteredDF=filteredDF.dropna()
 
 mean=np.mean(times)
 #cut on sat +/- 400ps
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-2E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+2E-10   ].index)
 
 
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
-OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
+if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
+else: OUTfile=uproot.recreate(result_path+"/Filtered_"+args.freq+"_Run_"+run_num+".root")
 OUTfile["Tree"]=filteredDF
 events=len(filteredDF[filteredDF.columns[0]])
 if args.writecsv is None:
     f = open(csv_path+"resultsTIME.csv", "a")
     #print(csv_path+"resultsTIME.csv")
-    #Run NUM;RUN TYPE;MEAN AMPLITUDE;ERR AMPLITUDE;MEAN CAHRGE;ERR CHARGE;MEAN RISETIME;ERR RISETIME;TIME RESOLUTION;ERR TIME RESOLUTON;EVENTS
-    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.std(filteredDF["amplitudeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["echargeDUT"]))+";"+str(np.std(filteredDF["echargeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["risetimeDUT"])/np.sqrt(events))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+";"+str(events)+"\n")
+    #Run NUM;RUN TYPE;MEAN AMPLITUDE;ERR AMPLITUDE;MEAN sigmaOUTnoise;ERR sigmaOUTnoise;MEAN CAHRGE;ERR CHARGE;MEAN RISETIME;ERR RISETIME;TIME RESOLUTION;ERR TIME RESOLUTON;EVENTS
+    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.std(filteredDF["amplitudeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["sigmaDUT"]))+";"+str(np.std(filteredDF["sigmaDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["echargeDUT"]))+";"+str(np.std(filteredDF["echargeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["risetimeDUT"])/np.sqrt(events))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+";"+str(events)+"\n")
     f.close()
 gc.collect()

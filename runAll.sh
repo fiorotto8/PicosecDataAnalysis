@@ -1,32 +1,44 @@
 #!/bin/bash
 
+#SPE Ne/CO2/iso
+<<com
+python3 analyze_SPErun.py -r 0 -c 1
+python3 analyze_SPErun.py -r 1 -c 1
+python3 analyze_SPErun.py -r 2 -c 1
+python3 analyze_SPErun.py -r 3 -c 1
+python3 analyze_SPErun.py -r 4 -c 1
+python3 analyze_SPErun.py -r 5 -c 1
+python3 analyze_SPErun.py -r 6 -c 1
+python3 analyze_SPErun.py -r 7 -c 1
+com
+
 #FFT analysis
+<<com
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 4.9E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 4.9E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 4E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 4E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 3E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 3E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 2.5E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 2.5E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 2E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 2E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 1.5E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 1.5E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 1E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 1E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.8E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 0.8E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.6E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 0.6E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.4E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 0.4E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.2E9
-python3 analyze_TIMErun.py -r 227
+python3 analyze_TIMErun.py -r 227 -f 0.2E9
 python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.1E9
-python3 analyze_TIMErun.py -r 227
-
-
+python3 analyze_TIMErun.py -r 227 -f 0.1E9
+com
 
 #For Chiara Local
 <<com

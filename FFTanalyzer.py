@@ -389,12 +389,11 @@ hist2D("FFT signal spectrum",xffts, yffts,custom_Xbins,custom_Ybins, x_name="Fre
 main.Close()
 #reopen the file with uproot to write the ttree tabular
 file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
-
 cols=["original index","XDUT","YDUT","noiseDUT","echargeDUT","amplitudeDUT","sigmaDUT","PosStdDUT","sigmoid ampltitudeDUT","sigmoid sigmaDUT","sigmoid meanDUT","risetimeDUT","XREF","YREF","noiseREF","echargeREF","amplitudeREF","sigmaREF","PosStdREF","sigmoid ampltitudeREF","sigmoid sigmaREF","sigmoid meanREF","risetimeREF"]
-
-
 dfDUT = pd.DataFrame(data,columns=cols)
-
 file["Tree"]=dfDUT
+
+file1=uproot.recreate(result_path+"/Raw_"+args.freq+"_Run_"+run_num+".root")
+file1["Tree"]=dfDUT
 
 gc.collect()
