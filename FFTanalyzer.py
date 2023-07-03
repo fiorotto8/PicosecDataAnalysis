@@ -12,7 +12,7 @@ import math as m
 import time
 import uproot
 import gc
-
+from scipy.signal import butter, lfilter, freqz
 gc.collect()
 
 file = open("path.txt", "r")
@@ -206,6 +206,15 @@ def plotsDF(df, textOFF):
         plot=graph2D(textOFF+" map "+c,df[df.columns[0]],df[df.columns[1]],df[c], "x (mm)", "y (mm)", c)
         Canvas2D(plot,result_path,np.max(df[c]),Np=50,min=0, max=50)
 
+
+def butter_lowpass(cutoff, fs, order=5):
+    return butter(order, cutoff, fs=fs, btype='low', analog=False)
+
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
+
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
@@ -217,8 +226,17 @@ parser.add_argument('-n','--name',help='put a name for the SignalScope object if
 parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
 parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
+parser.add_argument('-f','--freq',help='Lowpass filter cutoff frequency', action='store', default=None)
 
 args = parser.parse_args()
+
+# Filter requirements.
+order = 6
+fs = 10E9       # sample rate, Hz
+cutoff = float(args.freq)  # desired cutoff frequency of the filter, Hz
+# Get the filter coefficients so we can check its frequency response.
+b, a = butter_lowpass(cutoff, fs, order)
+
 
 #get the run number from path
 run_num=args.run
@@ -234,7 +252,7 @@ print("################Analysing Run"+run_num+"################")
 if not os.path.isdir(result_path):
     os.makedirs(result_path)
 
-main=ROOT.TFile(result_path+"/FFT_Run_"+run_num+".root","RECREATE")#root file creation
+main=ROOT.TFile(result_path+"/FFT_"+args.freq+"_Run_"+run_num+".root","RECREATE")#root file creation
 #main=ROOT.TFile("Run_"+run_num+".root","RECREATE")#root file creation
 if args.batch is None: ROOT.gROOT.SetBatch(True)
 e=1.6E-19
@@ -302,9 +320,16 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=None,sigma=3,fit=True, badDebug=args.debugBad)
+        #signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=None,sigma=3,fit=True, badDebug=args.debugBad)
         signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=None,sigma=3,fit=True, UseDeriv=False, badDebug=args.debugBad)
-        tempffts=signalDUT.GetFFT(signalDUT.Epeakmin,signalDUT.Epeakmax)
+        #filter the signal
+        y = butter_lowpass_filter(wavesDUT[i]["V"], cutoff, fs, order)
+        #print(y, len(y), len(wavesDUT[i]["T"]))
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],y,"DUT_"+args.name+str(i), risetimeCut=None,sigma=3,fit=True, badDebug=args.debugBad)
+        if i>=10 and i<=20:
+            signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
+        #tempffts=signalDUT.GetFFT(signalDUT.Epeakmin,signalDUT.Epeakmax)
+        tempffts=signalDUT.GetFFT(0,signalDUT.timeMax)
         tempfftsnoise=signalDUT.GetFFT(0,0.5*signalDUT.tFitMax)
 
         if args.draw is not None:# and signalDUT.badSignalFlag==False:
@@ -340,6 +365,10 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             for f in tempffts[1]: yffts.append(f)
             for f in tempfftsnoise[0]: xfftsnoise.append(f)
             for f in tempfftsnoise[1]: yfftsnoise.append(f)
+        data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.risetime,
+                    track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.risetime])
+
+
 
 print("Fraction of NOTRECO bad events:",len(notReco)/len(wavesDUT))
 print("Fraction of DUT bad events:",len(badDUT)/(len(wavesDUT)-len(notReco)))
@@ -348,7 +377,8 @@ print("Fraction of remaining events:",1-((len(badDUT)-len(badREF))/(len(wavesDUT
 
 main.cd()
 ch=100
-custom_Ybins=np.logspace(np.log10(np.min(yfftsnoise)),np.log10(np.max(yfftsnoise)), ch+1)
+ymin,ymax=np.min([np.min(yfftsnoise),np.min(yffts)]),np.max([np.max(yfftsnoise),np.max(yffts)])
+custom_Ybins=np.logspace(np.log10(np.min(ymin)),np.log10(np.max(ymax)), ch+1)
 custom_Xbins=np.linspace(np.min(xfftsnoise),np.max(xfftsnoise),ch+1)
 hist2D("FFT noise spectrum",xfftsnoise, yfftsnoise,custom_Xbins,custom_Ybins, x_name="Frequency (Hz)", y_name="Noise Power?", channels=100,linecolor=2)
 #custom_Ybins=np.logspace(np.log10(np.min(yffts)),np.log10(np.max(yffts)), ch+1)
@@ -357,5 +387,14 @@ hist2D("FFT signal spectrum",xffts, yffts,custom_Xbins,custom_Ybins, x_name="Fre
 
 
 main.Close()
+#reopen the file with uproot to write the ttree tabular
+file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
+
+cols=["original index","XDUT","YDUT","noiseDUT","echargeDUT","amplitudeDUT","sigmaDUT","PosStdDUT","sigmoid ampltitudeDUT","sigmoid sigmaDUT","sigmoid meanDUT","risetimeDUT","XREF","YREF","noiseREF","echargeREF","amplitudeREF","sigmaREF","PosStdREF","sigmoid ampltitudeREF","sigmoid sigmaREF","sigmoid meanREF","risetimeREF"]
+
+
+dfDUT = pd.DataFrame(data,columns=cols)
+
+file["Tree"]=dfDUT
 
 gc.collect()

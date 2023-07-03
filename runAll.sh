@@ -1,5 +1,33 @@
 #!/bin/bash
 
+#FFT analysis
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 4.9E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 4E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 3E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 2.5E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 2E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 1.5E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 1E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.8E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.6E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.4E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.2E9
+python3 analyze_TIMErun.py -r 227
+python3 FFTanalyzer.py -r 227 -cDUT 2 -f 0.1E9
+python3 analyze_TIMErun.py -r 227
+
+
+
 #For Chiara Local
 <<com
 python3 analyze_SPErun.py -r C103/A275C540/noise+signal/ -c 1

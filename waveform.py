@@ -196,6 +196,7 @@ class ScopeSignalCividec:
         self.x=nparr(x)
         self.y=nparr(y)
         self.samples=len(x)
+        self.timeMax=self.x[-1]
 
         #find peak (needed for get the noise)
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
