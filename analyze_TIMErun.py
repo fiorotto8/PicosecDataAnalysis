@@ -185,14 +185,17 @@ parser = argparse.ArgumentParser(description='Analyze waveform from a certain Ru
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
 parser.add_argument('-f','--freq',help='Lowpass filter cutoff frequency', action='store', default=None)
+parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="4")
+parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
 
 args = parser.parse_args()
 
 #get the run number from path
 run_num=args.run
 run_path=run_path+run_num+"/"
-result_path=result_path+run_num+"/"
+result_path=result_path+run_num+"CDut"+args.channelDUT+"CRef"+args.channelREF+"/"
 
+#INfile = uproot.open(result_path+"/Raw_Run_"+run_num+".root")
 INfile = uproot.open(result_path+"/Raw_Run_"+run_num+".root")
 df=INfile["Tree"].arrays(library="pd")
 
@@ -204,12 +207,12 @@ filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filtere
 #filteredDF=filteredDF[(df["XDUT"]-DUTx_m)**2+(df["YDUT"]-DUTy_m)**2<5]
 
 
-"""
+
 #cut on sigmoid mean
 #filteredDF=df[df["sigmoid meanDUT"]<240E-9]
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]<210E-9].index)
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>240E-9].index)
-
+"""
 #cut on risetime
 filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]>0.8E-9].index)
 filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]<0.5E-9].index)
@@ -237,8 +240,8 @@ filteredDF=filteredDF.dropna()
 
 mean=np.mean(times)
 #cut on sat +/- 400ps
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-2E-10   ].index)
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+2E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
 
 
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))

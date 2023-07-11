@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SPE Ne/CO2/iso
-<<com
+
 python3 analyze_SPErun.py -r 0 -c 1
 python3 analyze_SPErun.py -r 1 -c 1
 python3 analyze_SPErun.py -r 2 -c 1
@@ -10,7 +10,9 @@ python3 analyze_SPErun.py -r 4 -c 1
 python3 analyze_SPErun.py -r 5 -c 1
 python3 analyze_SPErun.py -r 6 -c 1
 python3 analyze_SPErun.py -r 7 -c 1
-com
+python3 analyze_SPErun.py -r 8 -c 1
+python3 analyze_SPErun.py -r 9 -c 1
+python3 analyze_SPErun.py -r 10 -c 1
 
 #FFT analysis
 <<com

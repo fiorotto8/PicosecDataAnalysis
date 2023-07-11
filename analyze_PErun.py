@@ -160,11 +160,11 @@ def Canvas1D(plot):
 
     c.SaveAs(path+str(plot.GetName())+".png")
 
-
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-b','--batch',help='disable the batch mode of ROOT', action='store', default=None)
-parser.add_argument('-c','--channel',help='chennel to analyze default=2', action='store', default="2")
+parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
+parser.add_argument('-p','--position',help='DUT position in tracker default=1', action='store', default="3")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
 parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=2 mm', action='store',  default=2)
@@ -220,8 +220,12 @@ for i in tqdm.tqdm(range(len(files_signal[:num]))):
 
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
-df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
-track_info=df[[df.columns[0], "X"+args.channel+" ","Y"+args.channel+" "]]
+#df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
+df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1,skiprows = 1, engine='python', header=None)
+
+#we need to get the first column for event counter then the 3+3*pos, 3+3*pos+1
+#where pos is the position of the detector usually 1 for MCP and changing for the DUT (MM#)
+track_info=df[[df.columns[0], df.columns[3+3*int(args.position)],df.columns[3+3*int(args.position)+1]]]
 track_info=track_info.set_index(track_info.columns[0])
 
 main.mkdir("RawWaveforms")

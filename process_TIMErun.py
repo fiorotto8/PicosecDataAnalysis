@@ -198,7 +198,7 @@ args = parser.parse_args()
 #get the run number from path
 run_num=args.run
 run_path=run_path+run_num+"/"
-result_path=result_path+run_num+"/"
+result_path=result_path+run_num+"CDut"+args.channelDUT+"CRef"+args.channelREF+"/"
 #check the active channels
 print(run_path)
 files=next(os.walk(run_path))[2]
