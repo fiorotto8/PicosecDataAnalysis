@@ -185,6 +185,7 @@ parser = argparse.ArgumentParser(description='Analyze waveform from a certain Ru
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-w','--writecsv',help='any value will disable the csv results writing, default None', action='store', default=None)
 parser.add_argument('-f','--freq',help='Lowpass filter cutoff frequency', action='store', default=None)
+parser.add_argument('-frac','--CFDfraction',help='Fraction of the CFD', action='store', default="0.5")
 parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="4")
 parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
 
@@ -201,7 +202,7 @@ df=INfile["Tree"].arrays(library="pd")
 
 filteredDF=df
 
-cut_radius=1#mm
+cut_radius=2#mm
 #geometric cut DUT
 DUTx_m,DUTy_m=np.mean(filteredDF["XDUT"]),np.mean(filteredDF["YDUT"])
 filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>cut_radius**2   ].index)
@@ -209,23 +210,20 @@ filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filtere
 DUTx_m,DUTy_m=np.mean(filteredDF["XREF"]),np.mean(filteredDF["YREF"])
 filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XREF"]-DUTx_m)**2+(filteredDF["YREF"]-DUTy_m)**2>cut_radius**2  ].index)
 
-
-
 #cut on sigmoid mean
 #filteredDF=df[df["sigmoid meanDUT"]<240E-9]
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]<210E-9].index)
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>240E-9].index)
 
-#cut on risetime
-#filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]>1.2E-9].index)
-#filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]<0.4E-9].index)
 
-
-#cut on amplitude
-#filteredDF=filteredDF.drop(filteredDF[filteredDF["amplitudeDUT"]<15E-3].index)
+meanR=np.mean(filteredDF["risetimeDUT"])
+sigmaR=np.mean(filteredDF["risetimeDUT"])
+#cut on risetime +/- 3sigma
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]<meanR-3*sigmaR   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]>meanR+3*sigmaR   ].index)
 
 #fraction and delay setting
-f=0.2
+f=float(args.CFDfraction)
 Ddut=np.mean(filteredDF["risetimeDUT"])*(1-f)
 Dref=np.mean(filteredDF["risetimeREF"])*(1-f)
 #Dref, Ddut=0.5E-9,0.5E-9
@@ -242,11 +240,10 @@ filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 filteredDF=filteredDF.dropna()
 
 mean=np.mean(times)
-"""
 #cut on sat +/- 300ps
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
-"""
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-2E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+2E-10   ].index)
+
 
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
