@@ -270,9 +270,9 @@ main.mkdir("RawWaveforms/REF/Signal")
 print("Analyzing")
 for i in tqdm.tqdm(range(len(wavesDUT))):
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
-    #track.WaveGraph(write=True)
+    track.WaveGraph(write=True)
     #get coordniates and discaard the non resctostruded events
-    if track.ID not in track_info.index:
+    if track.ID not in track_info.index and 1:
         notReco.append(i)
         continue
     else:

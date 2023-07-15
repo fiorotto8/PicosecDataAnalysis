@@ -994,7 +994,7 @@ class EventIDSignal():
         self.name=name
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
         self.Ampmax, self.AmpmaxIdx=self.GetAmplitudeMax()
-        self.ID=self.GetEventID()
+        #self.ID=self.GetEventID()
 
     def NotReco(self):
         self.notReco = True

@@ -164,7 +164,7 @@ parser = argparse.ArgumentParser(description='Analyze waveform from a certain Ru
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-b','--batch',help='disable the batch mode of ROOT', action='store', default=None)
 parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
-parser.add_argument('-p','--position',help='DUT position in tracker default=1', action='store', default="3")
+parser.add_argument('-p','--position',help='DUT position in tracker default=3', action='store', default="3")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
 parser.add_argument('-n','--name',help='put a name for the SignalScope object if you want, default=test', action='store', default="test")
 parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=2 mm', action='store',  default=2)
