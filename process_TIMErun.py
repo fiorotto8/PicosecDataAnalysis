@@ -14,7 +14,7 @@ import uproot
 import gc
 gc.collect()
 
-file = open("path.txt", "r")
+file = open("path copy.txt", "r")
 for string in file:
     exec(string)
 file.close()
@@ -185,6 +185,8 @@ parser = argparse.ArgumentParser(description='Analyze waveform from a certain Ru
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
 parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
 parser.add_argument('-b','--batch',help='Disable the batch mode of ROOT', action='store', default=None)
+parser.add_argument('-pDUT','--posDUT',help='DUT position in tracker default=3', action='store', default="3")
+parser.add_argument('-pREF','--posREF',help='REF position in tracker default=1', action='store', default="1")
 parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="4")
 parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
 parser.add_argument('-s','--selFiles',help='limit in the number of files to analyze defalut=all', action='store', default="all")
@@ -258,11 +260,18 @@ data,dataDUT,dataREF, notReco,badDUT, badREF=[],[],[],[],[],[]
 
 #get the tracking info once so you don't have to open every time the dataframe
 #last row is shitty drop it
-df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1, engine='python')
-track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
+df=pd.read_csv(trk_path+"asciiRun"+str(run_num)+".dat", sep="\t", skipfooter=1,skiprows = 1, engine='python', header=None)
+#we need to get the first column for event counter then the 3+3*pos, 3+3*pos+1
+#where pos is the position of the detector usually 1 for MCP and changing for the DUT (MM#)
+track_info=df[[df.columns[0], df.columns[3+3*int(args.posREF)],df.columns[3+3*int(args.posREF)+1], df.columns[3+3*int(args.posDUT)],df.columns[3+3*int(args.posDUT)+1]]]
 track_info=track_info.set_index(track_info.columns[0])
-track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
 
+#OLD without tracker position
+#track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
+#track_info=track_info.set_index(track_info.columns[0])
+
+track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
+#print(track_info)
 main.mkdir("RawWaveforms/DUT/Fit")
 main.mkdir("RawWaveforms/REF/Fit")
 main.mkdir("RawWaveforms/DUT/Signal")
@@ -276,8 +285,8 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=None,sigma=0,sigma_thr=0,fit=True, badDebug=args.debugBad)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=None,sigma=0,fit=True, UseDeriv=False, badDebug=args.debugBad)
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=None,fit=True, badDebug=args.debugBad)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=None,fit=True, UseDeriv=False, badDebug=args.debugBad)
         if args.draw is not None:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)

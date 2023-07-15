@@ -14,7 +14,7 @@ import uproot
 import gc
 gc.collect()
 
-file = open("path.txt", "r")
+file = open("path copy.txt", "r")
 for string in file:
     exec(string)
 file.close()
@@ -201,10 +201,13 @@ df=INfile["Tree"].arrays(library="pd")
 
 filteredDF=df
 
-#geometric cut
+cut_radius=1#mm
+#geometric cut DUT
 DUTx_m,DUTy_m=np.mean(filteredDF["XDUT"]),np.mean(filteredDF["YDUT"])
-filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>4   ].index)
-#filteredDF=filteredDF[(df["XDUT"]-DUTx_m)**2+(df["YDUT"]-DUTy_m)**2<5]
+filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>cut_radius**2   ].index)
+#geometric cut REF
+DUTx_m,DUTy_m=np.mean(filteredDF["XREF"]),np.mean(filteredDF["YREF"])
+filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XREF"]-DUTx_m)**2+(filteredDF["YREF"]-DUTy_m)**2>cut_radius**2  ].index)
 
 
 
@@ -212,11 +215,11 @@ filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filtere
 #filteredDF=df[df["sigmoid meanDUT"]<240E-9]
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]<210E-9].index)
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>240E-9].index)
-"""
+
 #cut on risetime
-filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]>0.8E-9].index)
-filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]<0.5E-9].index)
-"""
+#filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]>1.2E-9].index)
+#filteredDF=filteredDF.drop(filteredDF[filteredDF["risetimeDUT"]<0.4E-9].index)
+
 
 #cut on amplitude
 #filteredDF=filteredDF.drop(filteredDF[filteredDF["amplitudeDUT"]<15E-3].index)
@@ -239,10 +242,11 @@ filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 filteredDF=filteredDF.dropna()
 
 mean=np.mean(times)
-#cut on sat +/- 400ps
+"""
+#cut on sat +/- 300ps
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
-
+"""
 
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")

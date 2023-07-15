@@ -599,8 +599,6 @@ class ScopeSignalCividec:
         filtered_sig = fftpack.ifft(filtered_freq)
         return self.x, filtered_sig
 
-
-
 class ScopeSignalSlow:
     def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,sigma_thr=2, sigmaBad=5, risetimeCut=None, badDebug=None, EpeakBadDisable=False):
         self.badSignalFlag = False
@@ -994,7 +992,7 @@ class EventIDSignal():
         self.name=name
         self.Ampmin, self.AmpminIdx=self.GetAmplitudeMin()
         self.Ampmax, self.AmpmaxIdx=self.GetAmplitudeMax()
-        #self.ID=self.GetEventID()
+        self.ID=self.GetEventID()
 
     def NotReco(self):
         self.notReco = True
