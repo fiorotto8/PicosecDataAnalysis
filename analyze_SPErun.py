@@ -172,7 +172,7 @@ if len(sigma)!=0:
 #we enver calibrated the amplfier so it not posisble to obtain the absolute charge
 #however by doing the average of the average ampltides from the polya fit we get the correct number of PE/MIP
 
-amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=2000,bin="lin")
+amps=wf.ChargeDistr(amplitudes, "Run"+str(run_num),channels=500,bin="lin")
 if args.polya is None:
     b=amps.ComplexPolya(path=result_path)
 else:

@@ -14,7 +14,7 @@ import uproot
 import gc
 gc.collect()
 
-file = open("path copy.txt", "r")
+file = open("path.txt", "r")
 for string in file:
     exec(string)
 file.close()
