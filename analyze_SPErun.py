@@ -76,6 +76,7 @@ def graph(x,y,x_string, y_string, color=4, markerstyle=22, markersize=1):
 
 parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
 parser.add_argument('-r','--run',help='number of run contained in the standard_path (REMEMBER THE 0 if <100)', action='store')
+parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
 parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
 parser.add_argument('-b','--batch',help='Disable the batch mode of ROOT', action='store', default=None)
 parser.add_argument('-c','--channel',help='channel to analyze default=2', action='store', default="2")
@@ -92,8 +93,9 @@ run_num=args.run
 if run_num is None:
     print("use option -r with run number")
 
-run_path=run_path+run_num+"/"
-result_path=result_path+run_num+"/"
+#run_path=run_path+run_num+"/"
+run_path=base_path+"Runs/Pool"+str(args.oscilloscope)+"/Run"+run_num+"/"
+result_path=result_path+run_num+"-Pool"+args.oscilloscope+"-C"+args.channel+"/"
 
 print(run_path)
 files=next(os.walk(run_path))[2]

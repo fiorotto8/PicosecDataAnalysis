@@ -194,13 +194,14 @@ parser.add_argument('-n','--name',help='put a name for the SignalScope object if
 parser.add_argument('-w','--writecsv',help='Disable the csv results writing', action='store', default="1")
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
 parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
+parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
 
 args = parser.parse_args()
 
 #get the run number from path
 run_num=args.run
-run_path=run_path+run_num+"/"
-result_path=result_path+run_num+"CDut"+args.channelDUT+"CRef"+args.channelREF+"/"
+run_path=base_path+"Runs/Pool"+str(args.oscilloscope)+"/Run"+run_num+"/"
+result_path=result_path+run_num+"-Pool"+args.oscilloscope+"-CDut"+args.channelDUT+"-CRef"+args.channelREF+"/"
 #check the active channels
 print(run_path)
 files=next(os.walk(run_path))[2]

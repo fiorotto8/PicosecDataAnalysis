@@ -173,13 +173,14 @@ parser.add_argument('-w','--writecsv',help='any value will disable the csv resul
 parser.add_argument('-po','--polya',help='any value will disable the complex polya fit, default None', action='store', default=None)
 parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
 parser.add_argument('-all','--analyseAll',help='Enable the analyis of all the waveforms also the one not reconstructed', action='store', default=None)
+parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
 
 args = parser.parse_args()
 
 #get the run number from path
 run_num=args.run
-run_path=run_path+run_num+"/"
-result_path=result_path+run_num+"/"
+run_path=base_path+"Runs/Pool"+str(args.oscilloscope)+"/Run"+run_num+"/"
+result_path=result_path+run_num+"-Pool"+args.oscilloscope+"-C"+args.channel+"/"
 print(run_path)
 #check the active channels
 files=next(os.walk(run_path))[2]

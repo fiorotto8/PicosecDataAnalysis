@@ -188,13 +188,14 @@ parser.add_argument('-f','--freq',help='Lowpass filter cutoff frequency', action
 parser.add_argument('-frac','--CFDfraction',help='Fraction of the CFD', action='store', default="0.5")
 parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="4")
 parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
+parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
 
 args = parser.parse_args()
 
 #get the run number from path
 run_num=args.run
-run_path=run_path+run_num+"/"
-result_path=result_path+run_num+"CDut"+args.channelDUT+"CRef"+args.channelREF+"/"
+run_path=base_path+"Runs/Pool"+str(args.oscilloscope)+"/Run"+run_num+"/"
+result_path=result_path+run_num+"-Pool"+args.oscilloscope+"-CDut"+args.channelDUT+"-CRef"+args.channelREF+"/"
 
 #INfile = uproot.open(result_path+"/Raw_Run_"+run_num+".root")
 INfile = uproot.open(result_path+"/Raw_Run_"+run_num+".root")
