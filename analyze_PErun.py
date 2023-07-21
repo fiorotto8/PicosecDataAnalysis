@@ -381,6 +381,6 @@ file1["Tree"]=df
 if args.writecsv is None:
     f = open(csv_path+"resultsPE.csv", "a")
     #Run NUM;RUN TYPE;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
-    f.write(str(run_num)+";"+"PE"+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
+    f.write(str(run_num)+";"+"PE"+";"+str(args.oscilloscope)+";"+str(args.channel)+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1-(len(x)/len(waves)))+"\n")
     f.close()
 gc.collect()

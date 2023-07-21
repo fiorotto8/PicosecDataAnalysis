@@ -255,6 +255,6 @@ if args.writecsv is None:
     f = open(csv_path+"resultsTIME.csv", "a")
     #print(csv_path+"resultsTIME.csv")
     #Run NUM;RUN TYPE;MEAN AMPLITUDE;ERR AMPLITUDE;MEAN sigmaOUTnoise;ERR sigmaOUTnoise;MEAN CAHRGE;ERR CHARGE;MEAN RISETIME;ERR RISETIME;TIME RESOLUTION;ERR TIME RESOLUTON;EVENTS
-    f.write(str(run_num)+";"+"TIME"+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.std(filteredDF["amplitudeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["sigmaDUT"]))+";"+str(np.std(filteredDF["sigmaDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["echargeDUT"]))+";"+str(np.std(filteredDF["echargeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["risetimeDUT"])/np.sqrt(events))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+";"+str(events)+"\n")
+    f.write(str(run_num)+";"+"TIME"+";"+str(args.oscilloscope)+";"+str(args.channelDUT)+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.std(filteredDF["amplitudeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["sigmaDUT"]))+";"+str(np.std(filteredDF["sigmaDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["echargeDUT"]))+";"+str(np.std(filteredDF["echargeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["risetimeDUT"])/np.sqrt(events))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+";"+str(events)+"\n")
     f.close()
 gc.collect()

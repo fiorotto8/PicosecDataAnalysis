@@ -1,10 +1,8 @@
 #### Davide PC ####
-base_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
-#scope="Pool5/"
-#run_path=base_path+"Runs/"+scope+"Run"
-result_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/Results/Run"
-trk_path=base_path+"tracker/"
-csv_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
+#base_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
+#result_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/Results/Run"
+#trk_path=base_path+"tracker/"
+#csv_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
 
 #### Picosec PC - SPE analysis ####
 #base_path="/home/bavia/Documents/Picosec/Ne-CO2_iso_93-5-2/"
@@ -39,9 +37,7 @@ csv_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
 #csv_path="/home/bavia/Documents/Picosec/TestBeamResults/July_2023/multi_ORTEC/Results/"
 
 #### Picosec PC ####
-#base_path="/media/bavia/Dati/July_2023/"
-#scope="Pool2/"
-#run_path=base_path+"Runs/"+scope+"Run"
-#result_path="/home/bavia/Documents/Picosec/TestBeamResults/July_2023/Run"
-#trk_path=base_path+"tracker/"
-#csv_path="/home/bavia/Documents/Picosec/TestBeamResults/July_2023/"
+base_path="/media/bavia/Dati/July_2023/"
+result_path="/media/bavia/Dati/July_2023/Results/Run"
+trk_path=base_path+"tracker/"
+csv_path="/media/bavia/Dati/July_2023/"
