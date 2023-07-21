@@ -4,59 +4,59 @@
 ###################
 
 #SPE B4C 10nm
-<<com
+#<<com
 python3 analyze_SPErun.py -r 126 -c 2
 python3 analyze_SPErun.py -r 127 -c 2
 python3 analyze_SPErun.py -r 128 -c 2
-com
+#com
 
 #PE B4C 10nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 129 -c 2
 python3 analyze_PErun.py -r 130 -c 2
 python3 analyze_PErun.py -r 131 -c 2
-com
+#com
 
 #SPE DLC 2.5 shitty
-<<com
+#<<com
 python3 analyze_SPErun.py -r 151 -c 2
 python3 analyze_SPErun.py -r 152 -c 2
 python3 analyze_SPErun.py -r 153 -c 2
-com
+#com
 
 #PE DLC 2.5 shitty
-<<com
+#<<com
 python3 analyze_PErun.py -r 154 -c 2
 python3 analyze_PErun.py -r 155 -c 2
-com
+#com
 
 #SPE DLC B4C 4nm
-<<com
+#<<com
 python3 analyze_SPErun.py -r 191 -c 2
 python3 analyze_SPErun.py -r 192 -c 2
 python3 analyze_SPErun.py -r 193 -c 2
-com
+#com
 
 #PE B4C 4nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 195 -c 2
 python3 analyze_PErun.py -r 196 -c 2
 python3 analyze_PErun.py -r 197 -c 2
-com
+#com
 
 #SPE DLC 3nm
-<<com
+#<<com
 python3 analyze_SPErun.py -r 219 -c 2
 python3 analyze_SPErun.py -r 220 -c 2
 python3 analyze_SPErun.py -r 221 -c 2
-com
+#com
 
 #PE DLC 3nm
-<<com
+#<<com
 python3 analyze_PErun.py -r 228 -c 2
 python3 analyze_PErun.py -r 229 -c 2
 python3 analyze_PErun.py -r 230 -c 2
-com
+#com
 
 #Timing Pavia SC Ne/iso 90/10 
 #Pool2
@@ -193,17 +193,53 @@ com
 <<com
 #pad77
 python3 analyze_TIMErun.py -r 266 -pDUT 2 -cDUT 4
-python3 process_TIMErun.py -r 266 -cDUT 2
+python3 process_TIMErun.py -r 266 -cDUT 4
 python3 analyze_TIMErun.py -r 270 -pDUT 2 -cDUT 4
-python3 process_TIMErun.py -r 270 -cDUT 2
+python3 process_TIMErun.py -r 270 -cDUT 4
 python3 analyze_TIMErun.py -r 274 -pDUT 2 -cDUT 4
-python3 process_TIMErun.py -r 274 -cDUT 2
+python3 process_TIMErun.py -r 274 -cDUT 4
 com
 
 #Timing DLC 2.5nm
 <<com
-python3 analyze_TIMErun.py -r 266 -pDUT 5 -cDUT 4
-python3 process_TIMErun.py -r 266 -cDUT 5
+python3 analyze_TIMErun.py -r 417 -pDUT 5 -cDUT 4
+python3 process_TIMErun.py -r 417 -cDUT 4
+python3 analyze_TIMErun.py -r 418 -pDUT 5 -cDUT 4
+python3 process_TIMErun.py -r 418 -cDUT 4
+python3 analyze_TIMErun.py -r 419 -pDUT 5 -cDUT 4
+python3 process_TIMErun.py -r 419 -cDUT 4
+python3 analyze_TIMErun.py -r 420 -pDUT 5 -cDUT 4
+python3 process_TIMErun.py -r 420 -cDUT 4
+python3 analyze_TIMErun.py -r 421 -pDUT 5 -cDUT 4
+python3 process_TIMErun.py -r 421 -cDUT 4
+com
+
+###################
+###### Pool3 ######
+###################
+
+#Timing DLC 2.5nm
+<<com
+python3 analyze_TIMErun.py -r 454 -pDUT 2 -cDUT 4
+python3 process_TIMErun.py -r 454 -cDUT 4
+python3 analyze_TIMErun.py -r 455 -pDUT 2 -cDUT 4
+python3 process_TIMErun.py -r 455 -cDUT 4
+com
+
+#SPE DLC 2.5nm
+<<com
+python3 analyze_SPErun.py -r 468 -c 4
+python3 analyze_SPErun.py -r 469 -c 4
+python3 analyze_SPErun.py -r 470 -c 4
+python3 analyze_SPErun.py -r 471 -c 4
+com
+
+#PE DLC 2.5nm
+<<com
+python3 analyze_PErun.py -r 464 -c 4
+python3 analyze_PErun.py -r 465 -c 4
+python3 analyze_PErun.py -r 466 -c 4
+python3 analyze_PErun.py -r 467 -c 4
 com
 
 ###################
@@ -227,4 +263,34 @@ python3 process_TIMErun.py -r 352 -cDUT 2
 #pad55
 python3 analyze_TIMErun.py -r 355 -pDUT 2 -cDUT 2
 python3 process_TIMErun.py -r 355 -cDUT 2  
+com
+
+###################
+###### Pool5 ######
+###################
+
+#Timing DLC 2.5nm + 5mm MgF2
+<<com
+python3 analyze_TIMErun.py -r 464 -pDUT 3 -cDUT 2
+python3 process_TIMErun.py -r 464 -cDUT 2
+python3 analyze_TIMErun.py -r 465 -pDUT 3 -cDUT 2
+python3 process_TIMErun.py -r 465 -cDUT 2
+python3 analyze_TIMErun.py -r 466 -pDUT 3 -cDUT 2
+python3 process_TIMErun.py -r 466 -cDUT 2
+python3 analyze_TIMErun.py -r 467 -pDUT 3 -cDUT 2
+python3 process_TIMErun.py -r 467 -cDUT 2
+com
+
+#SPE DLC 2.5nm + 5mm MgF2
+<<com
+python3 analyze_SPErun.py -r 456 -c 2
+python3 analyze_SPErun.py -r 457 -c 2
+python3 analyze_SPErun.py -r 458 -c 2
+python3 analyze_SPErun.py -r 459 -c 2
+com
+
+#PE DLC 2.5nm + 5mm MgF2
+<<com
+python3 analyze_PErun.py -r 454 -c 2
+python3 analyze_PErun.py -r 455 -c 2
 com

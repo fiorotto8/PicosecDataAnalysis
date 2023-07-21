@@ -30,6 +30,14 @@
 #trk_path=base_path+"tracker/"
 #csv_path="/home/bavia/Documents/Picosec/multipad/Results/"
 
+#MULTIPAD 17/07/
+#base_path="/home/bavia/Documents/Picosec/TestBeamResults/July_2023/multi_ORTEC/"
+#scope=""
+#run_path=base_path+"Run"
+#result_path=base_path+"Results/Run"
+#trk_path=base_path+"tracker/"
+#csv_path="/home/bavia/Documents/Picosec/TestBeamResults/July_2023/multi_ORTEC/Results/"
+
 #### Picosec PC ####
 base_path="/media/bavia/Dati/July_2023/"
 scope="Pool2/"
