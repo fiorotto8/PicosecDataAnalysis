@@ -236,6 +236,10 @@ results=[]
 for i in tqdm.tqdm(range(len(waves))):
     result=[None,None,None,None,None,None,None,None]
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
+    if i <10:
+        track.WaveGraph(write=True)
+    if args.draw is not None:
+        track.WaveGraph(write=True)
     #track.WaveGraph(write=True)
     #get coordinates and discard the non reconstructed events
     if track.ID not in track_info.index and args.analyseAll is None:
@@ -243,7 +247,7 @@ for i in tqdm.tqdm(range(len(waves))):
     elif track.ID not in track_info.index and args.analyseAll is not None:
         result[0]=False
         signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
-        if args.draw is not None:
+        if args.draw is not None or i<50:
             signal.WaveSave(EpeakLines=True,Write=True)
         #check if signal is bad
         if signal.badSignalFlag==True:
