@@ -214,14 +214,15 @@ filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XREF"]-DUTx_m)**2+(filtere
 #cut on sigmoid mean
 #filteredDF=df[df["sigmoid meanDUT"]<240E-9]
 filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]<210E-9].index)
-filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>240E-9].index)
+filteredDF=filteredDF.drop(filteredDF[filteredDF["sigmoid meanDUT"]>239E-9].index)
 
-
+"""
 meanR=np.mean(filteredDF["risetimeDUT"])
 sigmaR=np.mean(filteredDF["risetimeDUT"])
 #cut on risetime +/- 3sigma
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]<meanR-3*sigmaR   ].index)
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]>meanR+3*sigmaR   ].index)
+"""
 
 #fraction and delay setting
 f=float(args.CFDfraction)
@@ -240,11 +241,12 @@ filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 #drop nan from sat calculation
 filteredDF=filteredDF.dropna()
 
+"""
 mean=np.mean(times)
 #cut on sat +/- 300ps
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-2E-10   ].index)
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+2E-10   ].index)
-
+"""
 
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")

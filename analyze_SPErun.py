@@ -183,7 +183,9 @@ print("Mean Amplitude Run"+str(run_num),b[1],"+/-",b[2], "Chi2/NDF:",b[4])
 
 if args.writecsv is None:
     f = open(csv_path+"resultsPE.csv", "a")
+    print(csv_path+"resultsPE.csv")
     #Run NUM;RUN TYPE;Pool;CDUT;MEAN RISETIME;ARITMETIC MEAN AMPLITUDE;AMPLITUDE FIT;ERR AMPLITUDE;CHI2/NDF;survived Waves from cuts
     f.write(str(run_num)+";"+"SPE"+";"+str(args.oscilloscope)+";"+str(args.channel)+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1)+"\n")
+    print(str(run_num)+";"+"SPE"+";"+str(args.oscilloscope)+";"+str(args.channel)+";"+str(np.mean(risetime))+";"+str(np.mean(amplitudes))+";"+str(b[1])+";"+str(b[2])+";"+str(b[4])+";"+str(1)+"\n")
     f.close()
 gc.collect()
