@@ -1,4 +1,16 @@
 #!/bin/bash
+#test CFD fraction
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.1
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.2
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.3
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.4
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.5
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.6
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.7
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.8
+python3 analyze_TIMErun.py -r 051 -cDUT 4 -os 2 -frac 0.9
+
+
 ###################
 ###### Pool2 ######
 ###################
@@ -58,7 +70,7 @@ python3 analyze_PErun.py -r 229 -c 2 -os 2
 python3 analyze_PErun.py -r 230 -c 2 -os 2
 com
 
-#Timing Pavia SC Ne/iso 90/10 
+#Timing Pavia SC Ne/iso 90/10
 #Pool2
 <<com
 python3 analyze_TIMErun.py -r 30 -pDUT 3 -cDUT 2 -os 2
@@ -86,7 +98,7 @@ python3 process_TIMErun.py -r 56 -cDUT 2 -os 2
 com
 
 
-#Timing Vacuum Chamebr Ne/iso 94/6 
+#Timing Vacuum Chamebr Ne/iso 94/6
 #Pool2
 <<com
 python3 analyze_TIMErun.py -r 36 -pDUT 6 -cDUT 4 -os 2
@@ -128,7 +140,7 @@ python3 analyze_TIMErun.py -r 66 -pDUT 3 -cDUT 2 -os 2
 python3 process_TIMErun.py -r 66 -cDUT 2 -os 2
 com
 
-#Timing Vacuum standard gas to compare with Ne/iso 94/6 
+#Timing Vacuum standard gas to compare with Ne/iso 94/6
 #Pool2
 <<com
 python3 analyze_TIMErun.py -r 61 -pDUT 6 -cDUT 4 -os 2
@@ -251,18 +263,18 @@ com
 <<com
 #pad88
 python3 analyze_TIMErun.py -r 274 -pDUT 2 -cDUT 4 -os 4
-python3 process_TIMErun.py -r 274 -cDUT 2 -os 4  
+python3 process_TIMErun.py -r 274 -cDUT 2 -os 4
 #pad22
 python3 analyze_TIMErun.py -r 342 -pDUT 2 -cDUT 4
-python3 process_TIMErun.py -r 342 -cDUT 2 -os 4 
+python3 process_TIMErun.py -r 342 -cDUT 2 -os 4
 python3 analyze_TIMErun.py -r 344 -pDUT 2 -cDUT 4
-python3 process_TIMErun.py -r 344 -cDUT 2 -os 4  
+python3 process_TIMErun.py -r 344 -cDUT 2 -os 4
 #pad28
 python3 analyze_TIMErun.py -r 352 -pDUT 2 -cDUT 4 -os 4
-python3 process_TIMErun.py -r 352 -cDUT 2 -os 4 
+python3 process_TIMErun.py -r 352 -cDUT 2 -os 4
 #pad55
 python3 analyze_TIMErun.py -r 355 -pDUT 2 -cDUT 2 -os 4
-python3 process_TIMErun.py -r 355 -cDUT 2 -os 4  
+python3 process_TIMErun.py -r 355 -cDUT 2 -os 4
 com
 
 ###################

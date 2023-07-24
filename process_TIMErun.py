@@ -270,7 +270,7 @@ track_info=track_info.set_index(track_info.columns[0])
 #OLD without tracker position
 #track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
 #track_info=track_info.set_index(track_info.columns[0])
-
+test0,test1,test2=[],[],[]
 track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
 #print(track_info)
 main.mkdir("RawWaveforms/DUT/Fit")
@@ -319,21 +319,31 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         #else:
         data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.risetime,
                     track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.risetime])
-
-        """
-        #OLD
-        cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
-        dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise,signalDUT.risetime,signalDUT.ArrivalTimeCFDFit(), signalDUT.PosStd])
-        dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise,signalREF.risetime,signalREF.ArrivalTimeCFDFit(), signalREF.PosStd])
-        """
-        """
-        if args.draw=="1":# and signalDUT.badSignalFlag==False:
-            print(i)
-            main.cd("RawWaveforms/DUT/Fit")
-            signalDUT.SigmoidFit(write=True)
-            main.cd("RawWaveforms/REF/Fit")
-            signalREF.SigmoidFit(write=True)
-        """
+        #TEST
+        #test=signalDUT.SigmoidFit(test=True)
+        #test0.append(test[0])
+        #test1.append(test[1])
+        #test2.append(test[2])
+"""
+main.cd()
+hist(test0,"par0")
+hist(test1,"par1")
+hist(test2,"par2")
+"""
+"""
+#OLD
+cols=["X","Y","noise","echarge","amplitude","sigma","risetime","SAT","PosStd"]
+dataDUT.append([track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise,signalDUT.risetime,signalDUT.ArrivalTimeCFDFit(), signalDUT.PosStd])
+dataREF.append([track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise,signalREF.risetime,signalREF.ArrivalTimeCFDFit(), signalREF.PosStd])
+"""
+"""
+if args.draw=="1":# and signalDUT.badSignalFlag==False:
+    print(i)
+    main.cd("RawWaveforms/DUT/Fit")
+    signalDUT.SigmoidFit(write=True)
+    main.cd("RawWaveforms/REF/Fit")
+    signalREF.SigmoidFit(write=True)
+"""
 print("Fraction of NOTRECO bad events:",len(notReco)/len(wavesDUT))
 print("Fraction of DUT bad events:",len(badDUT)/(len(wavesDUT)-len(notReco)))
 print("Fraction of REF bad events:",len(badREF)/(len(wavesDUT)-len(notReco)))
