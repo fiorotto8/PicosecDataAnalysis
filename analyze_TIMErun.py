@@ -223,6 +223,8 @@ sigmaR=np.mean(filteredDF["risetimeDUT"])
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]<meanR-3*sigmaR   ].index)
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]>meanR+3*sigmaR   ].index)
 """
+#cut on risetime
+#filteredDF=filteredDF.drop(filteredDF[   filteredDF["risetimeDUT"]>1.7E-9   ].index)
 
 #fraction and delay setting
 f=float(args.CFDfraction)
@@ -246,12 +248,12 @@ filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 filteredDF.replace([np.inf, -np.inf], np.nan, inplace=True)
 filteredDF=filteredDF.dropna()
 
-
+"""
 mean=np.mean(filteredDF["particleTime"])
 #cut on sat +/- 300ps
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
-
+"""
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
 else: OUTfile=uproot.recreate(result_path+"/Filtered_"+args.freq+"_Run_"+run_num+".root")
@@ -265,5 +267,5 @@ if args.writecsv is None:
     f.close()
 gc.collect()
 
-#checkdf= filteredDF[filteredDF["risetimeDUT"]>1E-9]
-#print(checkdf["original index"],checkdf["risetimeDUT"],checkdf["sigmoidsigmaDUT"])
+#checkdf= filteredDF[filteredDF["particleTime"]>-3300E-12]
+#print(checkdf["original index"],checkdf["particleTime"])

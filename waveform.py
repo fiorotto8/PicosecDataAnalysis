@@ -485,7 +485,7 @@ class ScopeSignalCividec:
         return ScopeSignal(self.x, y, "Derivative_"+self.name)
     """
 
-    def SigmoidFit(self,mult1=4, mult2=2,test=False,write=False,LeftPoints=50,RightPoints=2):
+    def SigmoidFit(self,mult1=6.7, mult2=2,test=False,write=False,LeftPoints=25,RightPoints=0):
         start0=self.Ampmin
         start1=self.risetime/mult1
         start2=(self.tFitMax+self.tFitMin)/mult2
@@ -498,6 +498,9 @@ class ScopeSignalCividec:
         #sigmoid.FixParameter(2,start2)
         #sigmoid.SetParLimits(2,0.9*start2,1.1*start2)
         plot=self.WaveGraph()
+        plot.Fit("sigmoid","RQ","r")
+        plot.Fit("sigmoid","RQ","r")
+        plot.Fit("sigmoid","RQ","r")
         plot.Fit("sigmoid","RQ","r")
         #print(self.risetime/4/sigmoid.GetParameter(1))
         if write==True: plot.Write()
