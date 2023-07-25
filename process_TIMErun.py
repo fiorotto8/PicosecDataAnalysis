@@ -277,20 +277,23 @@ main.mkdir("RawWaveforms/DUT/Fit")
 main.mkdir("RawWaveforms/REF/Fit")
 main.mkdir("RawWaveforms/DUT/Signal")
 main.mkdir("RawWaveforms/REF/Signal")
+main.mkdir("RawWaveforms/TRK")
 print("Analyzing")
 for i in tqdm.tqdm(range(len(wavesDUT))):
     track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
     if i <10:
+        main.cd("RawWaveforms/TRK")
         track.WaveGraph(write=True)
     if args.draw is not None:
+        main.cd("RawWaveforms/TRK")
         track.WaveGraph(write=True)
     #get coordniates and discaard the non resctostruded events
     if track.ID not in track_info.index and 1:
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), risetimeCut=None,fit=True, badDebug=args.debugBad)
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), risetimeCut=None,fit=True, UseDeriv=False, badDebug=args.debugBad)
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i),thresPosStd=5E-3, badDebug=args.debugBad)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), UseDeriv=False, badDebug=args.debugBad)
         if args.draw is not None or i<50:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)

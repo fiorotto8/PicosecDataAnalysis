@@ -181,7 +181,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name,thresPosStd=None, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5, risetimeCut=None,fit=False,satcut=None, UseDeriv=True, badDebug=None):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5,thresPosStd=None,risetimeCut=None, UseDeriv=True, badDebug=None):
         self.badSignalFlag = False
 
         self.name = name
@@ -251,14 +251,12 @@ class ScopeSignalCividec:
         self.fit=self.SigmoidFit()
 
         self.risetime=self.RiseTimeFit()
-        """
+        
         #risetime
         self.risetime= self.RiseTimeData()
         if risetimeCut is not None and (self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]):
             self.badSignalFlag = True
             if badDebug is not None: print("bad from risetimeCut")
-
-        """
 
         """
         if fit==True:

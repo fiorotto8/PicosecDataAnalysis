@@ -233,20 +233,24 @@ Dref=np.mean(filteredDF["risetimeREF"])*(1-f)
 
 #sat determination
 satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filteredDF["sigmoid sigmaDUT"]) - (1/f) )  )+filteredDF["sigmoid meanDUT"]
+#print(np.where(np.isnan(satDUT)))
+#print(np.where(np.isinf(satDUT)))
 satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
 
 times=satREF-satDUT
+#print(times)
 filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 
+#change inf to nan
 #drop nan from sat calculation
+filteredDF.replace([np.inf, -np.inf], np.nan, inplace=True)
 filteredDF=filteredDF.dropna()
 
-"""
-mean=np.mean(times)
+
+mean=np.mean(filteredDF["particleTime"])
 #cut on sat +/- 300ps
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-2E-10   ].index)
-filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+2E-10   ].index)
-"""
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
+filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
 
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
