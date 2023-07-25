@@ -233,13 +233,24 @@ Dref=np.mean(filteredDF["risetimeREF"])*(1-f)
 #Dref, Ddut=0.5E-9,0.5E-9
 #print(Dref, Ddut)
 
-#sat determination
+"""
+#sat determination Logistic
 satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filteredDF["sigmoid sigmaDUT"]) - (1/f) )  )+filteredDF["sigmoid meanDUT"]
 #print(np.where(np.isnan(satDUT)))
 #print(np.where(np.isinf(satDUT)))
 satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
+"""
+test=ROOT.TFile(result_path+"/test_Run_"+run_num+".root","RECREATE")#root file creation
 
-times=satREF-satDUT
+#sat determination GENERALIZED LOGISTIC
+#print(len(parREF[0]),len(parREF[1]),len(parREF[2]),len(parREF[3]))
+satDUT,satREF=[],[]
+for i in tqdm.tqdm(range(len(filteredDF["sigmoid amplitudeDUT"]))):
+    #print([filteredDF["sigmoid amplitudeDUT"].values[i],filteredDF["sigmoid meanDUT"].values[i],filteredDF["sigmoid sigmaDUT"].values[i],filteredDF["sigmoid expDUT"].values[i]])
+    satDUT.append(wf.GetCFDTimeGenLogistic(f,Ddut,[filteredDF["sigmoid amplitudeDUT"].values[i],filteredDF["sigmoid sigmaDUT"].values[i],filteredDF["sigmoid meanDUT"].values[i],filteredDF["sigmoid expDUT"].values[i]]))
+    satREF.append(wf.GetCFDTimeGenLogistic(f,Dref,[filteredDF["sigmoid amplitudeREF"].values[i],filteredDF["sigmoid sigmaREF"].values[i],filteredDF["sigmoid meanREF"].values[i],filteredDF["sigmoid expREF"].values[i]]))
+
+times=nparr(satREF)-nparr(satDUT)
 #print(times)
 filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 
