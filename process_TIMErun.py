@@ -293,7 +293,7 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), badDebug=args.debugBad)
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), badDebug=args.debugBad,peakposCut=[150E-9,300E-9])
         signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), UseDeriv=False, badDebug=args.debugBad)
         if args.draw is not None or i<50:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")

@@ -240,7 +240,7 @@ satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filtere
 #print(np.where(np.isinf(satDUT)))
 satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
 """
-test=ROOT.TFile(result_path+"/test_Run_"+run_num+".root","RECREATE")#root file creation
+#test=ROOT.TFile(result_path+"/test_Run_"+run_num+".root","RECREATE")#root file creation
 
 #sat determination GENERALIZED LOGISTIC
 #print(len(parREF[0]),len(parREF[1]),len(parREF[2]),len(parREF[3]))

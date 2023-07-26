@@ -203,7 +203,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5,thresPosStd=None,risetimeCut=None, UseDeriv=True, badDebug=None):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5,thresPosStd=None,risetimeCut=None, UseDeriv=True, badDebug=None,peakposCut=None):
         self.badSignalFlag = False
 
         self.name = name
@@ -265,6 +265,12 @@ class ScopeSignalCividec:
             self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax_fromDerivative()
         else:
             self.Epeakmax, self.EpeakmaxIdx=self.GetEpeakMax(sigma=sigma_thr)
+
+        #if max of peak is not in a certain time window reject it
+        if peakposCut is not None:
+            if self.tFitMin<peakposCut[0] or self.tFitMin>peakposCut[1]:
+                self.badSignalFlag = True
+                if badDebug is not None: print("bad from Peak out arrival window")
 
         self.Integral=(np.sum(self.y)/self.AmplifierGain)*(self.scopeImpedence*self.sampling)
         self.EpeakCharge, self.Gain=self.GetGain()
