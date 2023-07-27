@@ -234,13 +234,6 @@ Dref=np.mean(filteredDF["risetimeREF"])*(1-f)
 #Dref, Ddut=0.5E-9,0.5E-9
 #print(Dref, Ddut)
 
-"""
-#sat determination Logistic
-satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filteredDF["sigmoid sigmaDUT"]) - (1/f) )  )+filteredDF["sigmoid meanDUT"]
-#print(np.where(np.isnan(satDUT)))
-#print(np.where(np.isinf(satDUT)))
-satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
-"""
 #test=ROOT.TFile(result_path+"/test_Run_"+run_num+".root","RECREATE")#root file creation
 
 #sat determination GENERALIZED LOGISTIC
