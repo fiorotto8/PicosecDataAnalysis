@@ -38,8 +38,6 @@ def GetCFDTimeGenLogistic(f,D,par,start=200E-9,stop=250E-9):
         tarr=float('nan')
     return tarr
 
-
-
 def grapherr(x,y,ex,ey,x_string, y_string, color=4, markerstyle=22, markersize=1):
         plot = ROOT.TGraphErrors(len(x),  np.array(x  ,dtype="d")  ,   np.array(y  ,dtype="d") , np.array(   ex   ,dtype="d"),np.array( ey   ,dtype="d"))
         plot.SetNameTitle(y_string+" vs "+x_string,y_string+" vs "+x_string)
