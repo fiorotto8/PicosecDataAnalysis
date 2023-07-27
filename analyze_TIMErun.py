@@ -239,7 +239,7 @@ satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filtere
 #print(np.where(np.isinf(satDUT)))
 satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
 
-times=satREF-satDUT
+times=nparr(satREF)-nparr(satDUT)
 #print(times)
 filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 
