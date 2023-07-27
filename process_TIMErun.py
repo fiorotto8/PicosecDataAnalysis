@@ -271,8 +271,8 @@ track_info=track_info.set_index(track_info.columns[0])
 #OLD without tracker position
 #track_info=df[[df.columns[0], "X"+args.channelREF+" ","Y"+args.channelREF+" ", "X"+args.channelDUT+" ","Y"+args.channelDUT+" "]]
 #track_info=track_info.set_index(track_info.columns[0])
-test0R,test1R,test2R,test3R=[],[],[],[]
-test0D,test1D,test2D,test3D=[],[],[],[]
+test0R,test1R,test2R=[],[],[]
+test0D,test1D,test2D=[],[],[]
 track_info=track_info.rename(columns={track_info.columns[0]: 'xREF', track_info.columns[1]: 'yREF',track_info.columns[2]: 'xDUT', track_info.columns[3]: 'yDUT'})
 #print(track_info)
 main.mkdir("RawWaveforms/DUT/Fit")
@@ -298,6 +298,7 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         else: GenLog=False
         signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), badDebug=args.debugBad,peakposCut=[150E-9,300E-9],GenLog=GenLog)
         signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), UseDeriv=False, badDebug=args.debugBad,GenLog=GenLog)
+
         if args.draw is not None or i<50:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
@@ -332,24 +333,21 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.fit.GetChisquare()/signalDUT.fit.GetNDF(),signalDUT.risetime,signalDUT.tFitMax,
                     track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.fit.GetChisquare()/signalREF.fit.GetNDF(),signalREF.risetime,signalREF.tFitMax,
                     (signalDUT.tFitMax-signalREF.tFitMax)])
-"""
+        """
         #TEST
-        testD=signalDUT.GenSigmoidFit(test=True)
-        testR=signalREF.GenSigmoidFit(test=True)
+        testD=signalDUT.SigmoidFit(test=True)
+        testR=signalREF.SigmoidFit(test=True)
         test0D.append(testD[0])
         test1D.append(testD[1])
         test2D.append(testD[2])
-        test3D.append(testD[3])
         test0R.append(testR[0])
         test1R.append(testR[1])
         test2R.append(testR[2])
-        test3R.append(testR[3])
 
 main.cd()
 hist(test0D,"par0D")
 hist(test1D,"par1D")
 hist(test2D,"par2D")
-hist(test3D,"par3D")
 hist(test0R,"par0R")
 hist(test1R,"par1R")
 hist(test2R,"par2R")
