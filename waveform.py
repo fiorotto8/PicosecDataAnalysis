@@ -547,6 +547,28 @@ class ScopeSignalCividec:
         else:
             return sigmoid
 
+    def GenSigmoidFit(self,mult1=6.7, mult2=2,test=False,write=False,LeftPoints=25,RightPoints=0):
+        start0=self.Ampmin
+        start1=self.risetime/mult1
+        start2=(self.tFitMax+self.tFitMin)/mult2
+        start3=1
+
+        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1]))^[3])",self.tFitMin-(LeftPoints*self.sampling),self.tFitMax+(RightPoints*self.sampling))
+        sigmoid.SetParameters(start0, start1, start2,start3)
+        #sigmoid.FixParameter(0,start0)
+        #sigmoid.SetParLimits(0,0.9*start0,1.1*start0)
+        #sigmoid.SetParLimits(1,0.1*start1,10*start1)
+        #sigmoid.FixParameter(2,start2)
+        #sigmoid.SetParLimits(2,0.9*start2,1.1*start2)
+        plot=self.WaveGraph()
+        plot.Fit("sigmoid","RQ","r")
+        #print(self.risetime/4/sigmoid.GetParameter(1))
+        if write==True: plot.Write()
+        if test==True:
+            return [start0/sigmoid.GetParameter(0),start1/sigmoid.GetParameter(1), start2/sigmoid.GetParameter(2), start3/sigmoid.GetParameter(3)]
+        else:
+            return sigmoid
+
     def ArrivalTimeLESignal(self, threshold=0.2):
         x=self.x[self.EpeakminIdx:self.AmpminIdx]
         y=self.y[self.EpeakminIdx:self.AmpminIdx]
@@ -561,6 +583,11 @@ class ScopeSignalCividec:
     def GetInverseSigmoid(self,A,mu,sigma,b=1):
         inverse=ROOT.TF1("inverse", "-[1]*log(([0]/x)**(1/[3])-1)+[2]",self.Ampmin,0)
         inverse.SetParameters(A,mu,sigma,b)
+        return inverse
+
+    def GetInverseGenSigmoid(self,A,mu,sigma,exp):
+        inverse=ROOT.TF1("inverse", "-[1]*log(([0]/x)**(1/[3])-1)+[2]",self.Ampmin,0)
+        inverse.SetParameters(A,mu,sigma,exp)
         return inverse
 
     def ArrivalTimeLEFit(self, threshold=0.2):
@@ -952,6 +979,29 @@ class ScopeSignalSlow:
         else:
             return sigmoid
 
+    def GenSigmoidFit(self,mult1=6.7, mult2=2,test=False,write=False,LeftPoints=25,RightPoints=0):
+        start0=self.Ampmin
+        start1=self.risetime/mult1
+        start2=(self.tFitMax+self.tFitMin)/mult2
+        start3=1
+
+        sigmoid=ROOT.TF1("sigmoid", "([0]/(1+ exp(-(x-[2])/[1]))^[3])",self.tFitMin-(LeftPoints*self.sampling),self.tFitMax+(RightPoints*self.sampling))
+        sigmoid.SetParameters(start0, start1, start2,start3)
+        #sigmoid.FixParameter(0,start0)
+        #sigmoid.SetParLimits(0,0.9*start0,1.1*start0)
+        #sigmoid.SetParLimits(1,0.1*start1,10*start1)
+        #sigmoid.FixParameter(2,start2)
+        #sigmoid.SetParLimits(2,0.9*start2,1.1*start2)
+        plot=self.WaveGraph()
+        plot.Fit("sigmoid","RQ","r")
+        #print(self.risetime/4/sigmoid.GetParameter(1))
+        if write==True: plot.Write()
+        if test==True:
+            return [start0/sigmoid.GetParameter(0),start1/sigmoid.GetParameter(1), start2/sigmoid.GetParameter(2), start3/sigmoid.GetParameter(3)]
+        else:
+            return sigmoid
+
+
     def ArrivalTimeLESignal(self, threshold=0.2):
         x=self.x[self.EpeakminIdx:self.AmpminIdx]
         y=self.y[self.EpeakminIdx:self.AmpminIdx]
@@ -969,6 +1019,10 @@ class ScopeSignalSlow:
         inverse.SetParameters(FitFunc.GetParameter(0),FitFunc.GetParameter(1),FitFunc.GetParameter(2))
         return inverse
 
+    def GetInverseGenSigmoid(self,A,mu,sigma,exp):
+            inverse=ROOT.TF1("inverse", "-[1]*log(([0]/x)**(1/[3])-1)+[2]",self.Ampmin,0)
+            inverse.SetParameters(A,mu,sigma,exp)
+            return inverse
 
     def ArrivalTimeLEFit(self, threshold=0.2):
         inverse=self.GetInverseSigmoid()
