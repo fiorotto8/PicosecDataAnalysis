@@ -203,7 +203,7 @@ class TimeAnal:
         c.Write()
 
 class ScopeSignalCividec:
-    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5,thresPosStd=None,risetimeCut=None, UseDeriv=True, badDebug=None,peakposCut=None):
+    def __init__(self, x, y, name, scopeImpedence=50, AmplifierGain=100,kernel_size=100, edge_order=2,sigma_thr=2, sigma=5,thresPosStd=None,risetimeCut=None, UseDeriv=True, badDebug=None,peakposCut=None,GenLog=False):
         self.badSignalFlag = False
 
         self.name = name
@@ -276,9 +276,12 @@ class ScopeSignalCividec:
         self.EpeakCharge, self.Gain=self.GetGain()
 
         self.risetime= self.RiseTimeData()
-        self.fit=self.GenSigmoidFit()
-
-        self.risetime=self.RiseTimeGenFit()
+        if GenLog==False:
+            self.fit=self.SigmoidFit()
+            self.risetime=self.RiseTimeFit()
+        else:
+            self.fit=self.GenSigmoidFit()
+            self.risetime=self.RiseTimeGenFit()
 
         #risetime
         if risetimeCut is not None and (self.risetime<risetimeCut[0] or self.risetime>risetimeCut[1]):
@@ -383,13 +386,11 @@ class ScopeSignalCividec:
         return self.tFitMax-self.tFitMin
 
     def RiseTimeFit(self,b=1):
-        fit=self.fit
         inverse=self.GetInverseSigmoid(self.fit.GetParameter(0),self.fit.GetParameter(1),self.fit.GetParameter(2),b)
         start=inverse.Eval(0.1*self.fit.GetParameter(0))
         stop=inverse.Eval(0.9*self.fit.GetParameter(0))
         return stop-start
     def RiseTimeGenFit(self):
-        fit=self.fit
         inverse=self.GetInverseGenSigmoid(self.fit.GetParameter(0),self.fit.GetParameter(1),self.fit.GetParameter(2),self.fit.GetParameter(3))
         start=inverse.Eval(0.1*self.fit.GetParameter(0))
         stop=inverse.Eval(0.9*self.fit.GetParameter(0))

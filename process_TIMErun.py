@@ -195,6 +195,7 @@ parser.add_argument('-w','--writecsv',help='Disable the csv results writing', ac
 parser.add_argument('-po','--polya',help='Disable the complex polya fit', action='store', default="0")
 parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
 parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
+parser.add_argument('-gl','--GeneralizedLogistic',help='Enable the fit with the Generlaized logistic function', action='store',default=None)
 
 args = parser.parse_args()
 
@@ -293,8 +294,10 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
         notReco.append(i)
         continue
     else:
-        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), badDebug=args.debugBad,peakposCut=[150E-9,300E-9])
-        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), UseDeriv=False, badDebug=args.debugBad)
+        if args.GeneralizedLogistic is not None: GenLog=True
+        else: GenLog=False
+        signalDUT=wf.ScopeSignalCividec(wavesDUT[i]["T"],wavesDUT[i]["V"],"DUT_"+args.name+str(i), badDebug=args.debugBad,peakposCut=[150E-9,300E-9],GenLog=GenLog)
+        signalREF=wf.ScopeSignalCividec(wavesREF[i]["T"],wavesREF[i]["V"],"REF_"+args.name+str(i), UseDeriv=False, badDebug=args.debugBad,GenLog=GenLog)
         if args.draw is not None or i<50:# and signalDUT.badSignalFlag==False:
             main.cd("RawWaveforms/DUT/Signal")
             signalDUT.WaveSave(EpeakLines=True,Write=True,Zoom=True)
@@ -321,8 +324,15 @@ for i in tqdm.tqdm(range(len(wavesDUT))):
             badREF.append(i)
             continue
         #else:
-        data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.fit.GetParameter(3),signalDUT.fit.GetChisquare()/signalDUT.fit.GetNDF(),signalDUT.risetime,
-                    track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.fit.GetParameter(3),signalREF.fit.GetChisquare()/signalREF.fit.GetNDF(),signalREF.risetime])
+        if GenLog==True:
+            data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.fit.GetParameter(3),signalDUT.fit.GetChisquare()/signalDUT.fit.GetNDF(),signalDUT.risetime,signalDUT.tFitMax,
+                    track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.fit.GetParameter(3),signalREF.fit.GetChisquare()/signalREF.fit.GetNDF(),signalREF.risetime,signalREF.tFitMax,
+                    (signalDUT.tFitMax-signalREF.tFitMax)])
+        else:
+            data.append([i,track_info["xDUT"][track.ID],track_info["yDUT"][track.ID], signalDUT.baseLine, signalDUT.EpeakCharge, -1*signalDUT.Ampmin, signalDUT.SigmaOutNoise, signalDUT.PosStd,signalDUT.fit.GetParameter(0),signalDUT.fit.GetParameter(1),signalDUT.fit.GetParameter(2),signalDUT.fit.GetChisquare()/signalDUT.fit.GetNDF(),signalDUT.risetime,signalDUT.tFitMax,
+                    track_info["xREF"][track.ID],track_info["yREF"][track.ID], signalREF.baseLine, signalREF.EpeakCharge, -1*signalREF.Ampmin, signalREF.SigmaOutNoise, signalREF.PosStd,signalREF.fit.GetParameter(0),signalREF.fit.GetParameter(1),signalREF.fit.GetParameter(2),signalREF.fit.GetChisquare()/signalREF.fit.GetNDF(),signalREF.risetime,signalREF.tFitMax,
+                    (signalDUT.tFitMax-signalREF.tFitMax)])
+"""
         #TEST
         testD=signalDUT.GenSigmoidFit(test=True)
         testR=signalREF.GenSigmoidFit(test=True)
@@ -344,6 +354,7 @@ hist(test0R,"par0R")
 hist(test1R,"par1R")
 hist(test2R,"par2R")
 hist(test3R,"par3R")
+"""
 
 """
 #OLD
@@ -367,16 +378,22 @@ print("Fraction of remaining events:",1-((len(badDUT)-len(badREF))/(len(wavesDUT
 #print(badDUT)
 #print(badREF)
 
-main.Close()
-#reopen the file with uproot to write the ttree tabular
-file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
-
-cols=["original index","XDUT","YDUT","noiseDUT","echargeDUT","amplitudeDUT","sigmaDUT","PosStdDUT","sigmoid amplitudeDUT","sigmoid sigmaDUT","sigmoid meanDUT","sigmoid expDUT","Chi2RedDUT","risetimeDUT","XREF","YREF","noiseREF","echargeREF","amplitudeREF","sigmaREF","PosStdREF","sigmoid amplitudeREF","sigmoid sigmaREF","sigmoid meanREF","sigmoid expREF","Chi2RedREF","risetimeREF"]
-
+if GenLog==True:
+    cols=["original index","XDUT","YDUT","noiseDUT","echargeDUT","amplitudeDUT","sigmaDUT","PosStdDUT","sigmoid amplitudeDUT","sigmoid sigmaDUT","sigmoid meanDUT","sigmoid expDUT","Chi2RedDUT","risetimeDUT","MaxPosDUT","XREF","YREF","noiseREF","echargeREF","amplitudeREF","sigmaREF","PosStdREF","sigmoid amplitudeREF","sigmoid sigmaREF","sigmoid meanREF","sigmoid expREF","Chi2RedREF","risetimeREF","MaxPosREF","TimeDiffMaxPos"]
+else:
+    cols=["original index","XDUT","YDUT","noiseDUT","echargeDUT","amplitudeDUT","sigmaDUT","PosStdDUT","sigmoid amplitudeDUT","sigmoid sigmaDUT","sigmoid meanDUT","Chi2RedDUT","risetimeDUT","MaxPosDUT","XREF","YREF","noiseREF","echargeREF","amplitudeREF","sigmaREF","PosStdREF","sigmoid amplitudeREF","sigmoid sigmaREF","sigmoid meanREF","Chi2RedREF","risetimeREF","MaxPosREF","TimeDiffMaxPos"]
 
 dfDUT = pd.DataFrame(data,columns=cols)
-
+dfDUT.replace([np.inf, -np.inf], np.nan, inplace=True)
 dfDUT=dfDUT.dropna()
+
+graph(dfDUT["echargeDUT"],dfDUT["TimeDiffMaxPos"],"eCharge (C)","SAT from peak position DUT")
+graph(dfDUT["echargeREF"],dfDUT["TimeDiffMaxPos"],"eCharge (C)","SAT from peak position REF")
+
+main.Close()
+
+#reopen the file with uproot to write the ttree tabular
+file=uproot.recreate(result_path+"/Raw_Run_"+run_num+".root")
 file["Tree"]=dfDUT
 
 gc.collect()

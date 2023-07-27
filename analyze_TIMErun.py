@@ -189,6 +189,7 @@ parser.add_argument('-frac','--CFDfraction',help='Fraction of the CFD', action='
 parser.add_argument('-cDUT','--channelDUT',help='channel of DUT defaut=2', action='store', default="4")
 parser.add_argument('-cREF','--channelREF',help='channel of REF defaut=1', action='store', default="1")
 parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
+parser.add_argument('-g','--geo',help='Modify geo cut radius [mm], Default=2 mm', action='store',  default=2)
 
 args = parser.parse_args()
 
@@ -203,7 +204,7 @@ df=INfile["Tree"].arrays(library="pd")
 
 filteredDF=df
 
-cut_radius=2#mm
+cut_radius=float(args.geo) #mm round the max radius where the cherenkov come is still inside
 #geometric cut DUT
 DUTx_m,DUTy_m=np.mean(filteredDF["XDUT"]),np.mean(filteredDF["YDUT"])
 filteredDF=filteredDF.drop(filteredDF[   (filteredDF["XDUT"]-DUTx_m)**2+(filteredDF["YDUT"]-DUTy_m)**2>cut_radius**2   ].index)
@@ -245,10 +246,15 @@ satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filtere
 #sat determination GENERALIZED LOGISTIC
 #print(len(parREF[0]),len(parREF[1]),len(parREF[2]),len(parREF[3]))
 satDUT,satREF=[],[]
-for i in tqdm.tqdm(range(len(filteredDF["sigmoid amplitudeDUT"]))):
-    #print([filteredDF["sigmoid amplitudeDUT"].values[i],filteredDF["sigmoid meanDUT"].values[i],filteredDF["sigmoid sigmaDUT"].values[i],filteredDF["sigmoid expDUT"].values[i]])
-    satDUT.append(wf.GetCFDTimeGenLogistic(f,Ddut,[filteredDF["sigmoid amplitudeDUT"].values[i],filteredDF["sigmoid sigmaDUT"].values[i],filteredDF["sigmoid meanDUT"].values[i],filteredDF["sigmoid expDUT"].values[i]]))
-    satREF.append(wf.GetCFDTimeGenLogistic(f,Dref,[filteredDF["sigmoid amplitudeREF"].values[i],filteredDF["sigmoid sigmaREF"].values[i],filteredDF["sigmoid meanREF"].values[i],filteredDF["sigmoid expREF"].values[i]]))
+if "sigmoid expDUT" in filteredDF:
+    for i in tqdm.tqdm(range(len(filteredDF["sigmoid amplitudeDUT"]))):
+        #print([filteredDF["sigmoid amplitudeDUT"].values[i],filteredDF["sigmoid meanDUT"].values[i],filteredDF["sigmoid sigmaDUT"].values[i],filteredDF["sigmoid expDUT"].values[i]])
+        satDUT.append(wf.GetCFDTimeGenLogistic(f,Ddut,[filteredDF["sigmoid amplitudeDUT"].values[i],filteredDF["sigmoid sigmaDUT"].values[i],filteredDF["sigmoid meanDUT"].values[i],filteredDF["sigmoid expDUT"].values[i]]))
+        satREF.append(wf.GetCFDTimeGenLogistic(f,Dref,[filteredDF["sigmoid amplitudeREF"].values[i],filteredDF["sigmoid sigmaREF"].values[i],filteredDF["sigmoid meanREF"].values[i],filteredDF["sigmoid expREF"].values[i]]))
+else:
+    satDUT=-filteredDF["sigmoid sigmaDUT"]*np.log( ((1/f)-1) / ( np.exp(Ddut/filteredDF["sigmoid sigmaDUT"]) - (1/f) )  )+filteredDF["sigmoid meanDUT"]
+    satREF=-filteredDF["sigmoid sigmaREF"]*np.log( ((1/f)-1) / ( np.exp(Dref/filteredDF["sigmoid sigmaREF"]) - (1/f) )  )+filteredDF["sigmoid meanREF"]
+
 
 times=nparr(satREF)-nparr(satDUT)
 #print(times)
@@ -259,12 +265,11 @@ filteredDF=filteredDF.assign(satDUT=satDUT, satREF=satREF,particleTime=times)
 filteredDF.replace([np.inf, -np.inf], np.nan, inplace=True)
 filteredDF=filteredDF.dropna()
 
-"""
 mean=np.mean(filteredDF["particleTime"])
 #cut on sat +/- 300ps
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]<mean-3E-10   ].index)
 filteredDF=filteredDF.drop(filteredDF[   filteredDF["particleTime"]>mean+3E-10   ].index)
-"""
+
 print(np.mean(filteredDF["particleTime"]),np.std(filteredDF["particleTime"]))
 if args.freq is None: OUTfile=uproot.recreate(result_path+"/Filtered_Run_"+run_num+".root")
 else: OUTfile=uproot.recreate(result_path+"/Filtered_"+args.freq+"_Run_"+run_num+".root")
@@ -276,6 +281,12 @@ if args.writecsv is None:
     #Run NUM;RUN TYPE;SCOPE;CHANNEL;MEAN AMPLITUDE;ERR AMPLITUDE;MEAN sigmaOUTnoise;ERR sigmaOUTnoise;MEAN CAHRGE;ERR CHARGE;MEAN RISETIME;ERR RISETIME;TIME RESOLUTION;ERR TIME RESOLUTON;EVENTS
     f.write(str(run_num)+";"+"TIME"+";"+str(args.oscilloscope)+";"+str(args.channelDUT)+";"+str(np.mean(filteredDF["amplitudeDUT"]))+";"+str(np.std(filteredDF["amplitudeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["sigmaDUT"]))+";"+str(np.std(filteredDF["sigmaDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["echargeDUT"]))+";"+str(np.std(filteredDF["echargeDUT"])/np.sqrt(events))+";"+str(np.mean(filteredDF["risetimeDUT"]))+";"+str(np.std(filteredDF["risetimeDUT"])/np.sqrt(events))+";"+str(np.std(filteredDF["particleTime"]))+";"+str(wf.GetStdErr(filteredDF["particleTime"]))+";"+str(events)+"\n")
     f.close()
+
+main=ROOT.TFile(result_path+"/FilteredPlots_Run_"+run_num+".root","RECREATE")#root file creation
+graph(filteredDF["echargeDUT"],filteredDF["particleTime"],"eCharge (C)","SAT from CFD DUT")
+graph(filteredDF["echargeREF"],filteredDF["particleTime"],"eCharge (C)","SAT from CFD REF")
+
+
 gc.collect()
 
 #checkdf= filteredDF[filteredDF["particleTime"]>-3300E-12]
