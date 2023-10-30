@@ -1,6 +1,6 @@
 # PicosecDataAnalysis
 
-Tools for Picosec Analysis:
+## Tools for Picosec Analysis:
 
 - `analyze_SPErun.py` is for the analysis of the single photo-electron response
 - `analyze_PErun.py` is for the analysis of the multi-photo-electron response
