@@ -134,25 +134,51 @@ main.cd("RawWaveforms")
 print("Analyzing...")
 start=time.time()
 i=0
+"""
+parser = argparse.ArgumentParser(description='Analyze waveform from a certain Run', epilog='Version: 1.0')
+parser.add_argument('-d','--draw',help='any value allow to draw all waveform', action='store', default=None)
+args = parser.parse_args()
+
+
 def AnalWave(waveT,waveV,name):
     signal=wf.ScopeSignalSlow(waveT,waveV,name,sigmaBad=5,risetimeCut=None,badDebug=args.debugBad)
     return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.risetime,-1*signal.Ampmin]
-#if drawing cannot paralelize
+
+def process_wave(wave):
+    if args.draw is None:
+        return AnalWave(wave["T"], wave["V"], args.name + str(i))
+    else:
+        wf.ScopeSignalSlow(wave["T"], wave["V"], args.name + str(i)).WaveSave(EpeakLines=True, Write=True)
+        return AnalWave(wave["T"], wave["V"], args.name + str(i))
+
 if args.draw is None:
-    pool = mp.Pool(mp.cpu_count())
-    argsList=[]
-    for wave in waves:
-        argsList.append((wave["T"],wave["V"],args.name+str(i)))
-        i=i+1
-    results = pool.starmap(AnalWave,argsList)
-    #results = pool.starmap(AnalWave,[(wave["T"],wave["V"],args.name+str(i)) for wave in waves])
-    pool.close()
+    with mp.Pool(mp.cpu_count()) as pool:
+        results = pool.starmap(AnalWave, ((wave["T"], wave["V"], args.name + str(i)) for i, wave in enumerate(waves)))
 else:
-    results=[]
-    for wave in tqdm.tqdm(waves):
-        wf.ScopeSignalSlow(wave["T"],wave["V"],args.name+str(i)).WaveSave(EpeakLines=True, Write=True)
-        results.append(AnalWave(wave["T"],wave["V"],args.name+str(i)))
-        i=i+1
+    results = [process_wave(wave) for i, wave in tqdm.tqdm(enumerate(waves))]
+"""
+
+def AnalWave(args_tuple):
+    waveT, waveV, name = args_tuple
+    signal = wf.ScopeSignalSlow(waveT, waveV, name, sigmaBad=5, risetimeCut=None, badDebug=args.debugBad)
+    return [signal.badSignalFlag, signal.SigmaOutNoise, signal.baseLine, signal.risetime, -1 * signal.Ampmin]
+
+def process_wave(wave):
+    if args.draw is None:
+        return AnalWave((wave["T"], wave["V"], args.name + str(i)))
+    else:
+        wf.ScopeSignalSlow(wave["T"], wave["V"], args.name + str(i)).WaveSave(EpeakLines=True, Write=True)
+        return AnalWave((wave["T"], wave["V"], args.name + str(i)))
+
+results = []
+if args.draw is None:
+    with mp.Pool(mp.cpu_count()) as pool:
+        # Use tqdm with imap for real-time progress bar
+        results = list(tqdm.tqdm(pool.imap(AnalWave, ((wave["T"], wave["V"], args.name + str(i)) for i, wave in enumerate(waves))), total=len(waves)))
+else:
+    # Use tqdm directly in the loop
+    for i, wave in enumerate(tqdm.tqdm(waves)):
+        results.append(process_wave(wave))
 
 print("Analyzing time (s):", time.time()-start)
 
