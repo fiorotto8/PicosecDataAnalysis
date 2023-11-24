@@ -12,6 +12,8 @@ import math as m
 import time
 import gc
 import uproot
+import concurrent.futures
+
 gc.collect()
 
 file = open("path.txt", "r")
@@ -173,6 +175,7 @@ parser.add_argument('-po','--polya',help='any value will disable the complex pol
 parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
 parser.add_argument('-all','--analyseAll',help='Enable the analyis of all the waveforms also the one not reconstructed', action='store', default=None)
 parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
+parser.add_argument('-j','--cores',help='Number of core to use for waves process default all', action='store',default=None)
 
 args = parser.parse_args()
 
@@ -232,49 +235,59 @@ main.mkdir("RawWaveforms")
 main.cd("RawWaveforms")
 print("Analyzing")
 #columns will be ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"]
-results=[]
-for i in tqdm.tqdm(range(len(waves))):
-    result=[None,None,None,None,None,None,None,None]
-    track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
-    if i <10:
+
+def process_wave(i):
+    result = [None, None, None, None, None, None, None, None]
+    track = wf.EventIDSignal(waves_trk[i]["T"], waves_trk[i]["V"], "track_" + args.name + str(i))
+
+    if i < 10:
         track.WaveGraph(write=True)
+
     if args.draw is not None:
         track.WaveGraph(write=True)
-    #track.WaveGraph(write=True)
-    #get coordinates and discard the non reconstructed events
+
     if track.ID not in track_info.index and args.analyseAll is None:
-        result[0]=False
+        result[0] = False
     elif track.ID not in track_info.index and args.analyseAll is not None:
-        result[0]=False
-        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
-        if args.draw is not None or i<50:
-            signal.WaveSave(EpeakLines=True,Write=True)
-        #check if signal is bad
-        if signal.badSignalFlag==True:
-            result[3]=True
+        result[0] = False
+        signal = wf.ScopeSignalSlow(waves[i]["T"], waves[i]["V"], args.name + str(i), sigmaBad=5)
+
+        if args.draw is not None or i < 50:
+            signal.WaveSave(EpeakLines=True, Write=True)
+
+        if signal.badSignalFlag:
+            result[3] = True
         else:
-            result[3]=False
-        result[4]=(signal.SigmaOutNoise)
-        result[5]=(signal.baseLine)
-        result[6]=(signal.risetime)
-        result[7]=(-1*signal.Ampmin)
+            result[3] = False
+            result[4] = signal.SigmaOutNoise
+            result[5] = signal.baseLine
+            result[6] = signal.risetime
+            result[7] = -1 * signal.Ampmin
     elif track.ID in track_info.index:
-        result[0]=True
-        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
+        result[0] = True
+        signal = wf.ScopeSignalSlow(waves[i]["T"], waves[i]["V"], args.name + str(i), sigmaBad=5)
+
         if args.draw is not None:
-            signal.WaveSave(EpeakLines=True,Write=True)
-        #check if signal is bad
-        if signal.badSignalFlag==True:
-            result[3]=True
+            signal.WaveSave(EpeakLines=True, Write=True)
+
+        if signal.badSignalFlag:
+            result[3] = True
         else:
-            result[3]=False
-        result[1]=(track_info[track_info.columns[0]][track.ID])
-        result[2]=(track_info[track_info.columns[1]][track.ID])
-        result[4]=(signal.SigmaOutNoise)
-        result[5]=(signal.baseLine)
-        result[6]=(signal.risetime)
-        result[7]=(-1*signal.Ampmin)
-    results.append(result)
+            result[3] = False
+            result[1] = track_info[track_info.columns[0]][track.ID]
+            result[2] = track_info[track_info.columns[1]][track.ID]
+            result[4] = signal.SigmaOutNoise
+            result[5] = signal.baseLine
+            result[6] = signal.risetime
+            result[7] = -1 * signal.Ampmin
+
+    return result
+
+if args.cores is not None: num_workers = args.cores  # Adjust this number based on your preferences
+else: num_workers=os.cpu_count()
+
+with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
+    results = list(tqdm.tqdm(executor.map(process_wave, range(len(waves))), total=len(waves)))
 
 #df contains all the data and they are saved
 df = pd.DataFrame(results, columns = ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"])
