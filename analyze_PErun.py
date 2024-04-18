@@ -12,8 +12,6 @@ import math as m
 import time
 import gc
 import uproot
-import concurrent.futures
-
 gc.collect()
 
 file = open("path.txt", "r")
@@ -175,7 +173,6 @@ parser.add_argument('-po','--polya',help='any value will disable the complex pol
 parser.add_argument('-deb','--debugBad',help='Enable some prints for debugging the bad signals', action='store', default=None)
 parser.add_argument('-all','--analyseAll',help='Enable the analyis of all the waveforms also the one not reconstructed', action='store', default=None)
 parser.add_argument('-os','--oscilloscope',help='Number of the oscilloscope to use deafult 2', action='store',default="2")
-parser.add_argument('-j','--cores',help='Number of core to use for waves process default all', action='store',default=None)
 
 args = parser.parse_args()
 
@@ -235,59 +232,50 @@ main.mkdir("RawWaveforms")
 main.cd("RawWaveforms")
 print("Analyzing")
 #columns will be ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"]
-
-def process_wave(i):
-    result = [None, None, None, None, None, None, None, None]
-    track = wf.EventIDSignal(waves_trk[i]["T"], waves_trk[i]["V"], "track_" + args.name + str(i))
-
-    if i < 10:
+results=[]
+for i in tqdm.tqdm(range(len(waves))):
+    result=[None,None,None,None,None,None,None,None]
+    track=wf.EventIDSignal(waves_trk[i]["T"],waves_trk[i]["V"],"track_"+args.name+str(i))
+    if i <10:
         track.WaveGraph(write=True)
-
     if args.draw is not None:
         track.WaveGraph(write=True)
-
+    #track.WaveGraph(write=True)
+    #get coordinates and discard the non reconstructed events
     if track.ID not in track_info.index and args.analyseAll is None:
-        result[0] = False
+        result[0]=False
+   
     elif track.ID not in track_info.index and args.analyseAll is not None:
-        result[0] = False
-        signal = wf.ScopeSignalSlow(waves[i]["T"], waves[i]["V"], args.name + str(i), sigmaBad=5)
-
-        if args.draw is not None or i < 50:
-            signal.WaveSave(EpeakLines=True, Write=True)
-
-        if signal.badSignalFlag:
-            result[3] = True
+        result[0]=False
+        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
+        if args.draw is not None or i<50:
+            signal.WaveSave(EpeakLines=True,Write=True)
+        #check if signal is bad
+        if signal.badSignalFlag==True:
+            result[3]=True
         else:
-            result[3] = False
-            result[4] = signal.SigmaOutNoise
-            result[5] = signal.baseLine
-            result[6] = signal.risetime
-            result[7] = -1 * signal.Ampmin
+            result[3]=False
+        result[4]=(signal.SigmaOutNoise)
+        result[5]=(signal.baseLine)
+        result[6]=(signal.risetime)
+        result[7]=(-1*signal.Ampmin)
     elif track.ID in track_info.index:
-        result[0] = True
-        signal = wf.ScopeSignalSlow(waves[i]["T"], waves[i]["V"], args.name + str(i), sigmaBad=5)
-
+        result[0]=True
+        signal=wf.ScopeSignalSlow(waves[i]["T"],waves[i]["V"],args.name+str(i), sigmaBad=5)
         if args.draw is not None:
-            signal.WaveSave(EpeakLines=True, Write=True)
-
-        if signal.badSignalFlag:
-            result[3] = True
+            signal.WaveSave(EpeakLines=True,Write=True)
+        #check if signal is bad
+        if signal.badSignalFlag==True:
+            result[3]=True
         else:
-            result[3] = False
-            result[1] = track_info[track_info.columns[0]][track.ID]
-            result[2] = track_info[track_info.columns[1]][track.ID]
-            result[4] = signal.SigmaOutNoise
-            result[5] = signal.baseLine
-            result[6] = signal.risetime
-            result[7] = -1 * signal.Ampmin
-
-    return result
-
-if args.cores is not None: num_workers = args.cores  # Adjust this number based on your preferences
-else: num_workers=os.cpu_count()
-
-with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
-    results = list(tqdm.tqdm(executor.map(process_wave, range(len(waves))), total=len(waves)))
+            result[3]=False
+        result[1]=(track_info[track_info.columns[0]][track.ID])
+        result[2]=(track_info[track_info.columns[1]][track.ID])
+        result[4]=(signal.SigmaOutNoise)
+        result[5]=(signal.baseLine)
+        result[6]=(signal.risetime)
+        result[7]=(-1*signal.Ampmin)
+    results.append(result)
 
 #df contains all the data and they are saved
 df = pd.DataFrame(results, columns = ["Reco","X","Y","BadFlag", "SigmaOutNoise", "Baseline", "risetime", "Amplitude"])
@@ -318,7 +306,7 @@ main.cd("RecoData")
 #remove from df the non reco events and teh events out of the global radius
 df=df.drop(df[df["Reco"]==False].index)
 #cut on 12,5mm radius
-x_m,y_m=np.mean(df["X"].tolist()), np.mean(df["X"].tolist())
+x_m,y_m=np.mean(df["X"].tolist()), np.mean(df["Y"].tolist())
 df=df.drop(df[   (pow((df["X"]-x_m),2)+pow((df["Y"]-y_m),2))>pow(12.5,2)     ].index)
 #get lsits
 x,y,sigma,noises, risetime, amplitudes=df["X"].tolist(),df["Y"].tolist(),df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()
@@ -343,11 +331,12 @@ Canvas2D(sigmaPlot,result_path,np.max(sigma),Np=50,min=0, max=50)
 Canvas2D(noisePlot,result_path,np.max(noises),Np=50,min=0, max=50)
 
 #GEO+BAD CUT
-geo_cut=args.geo #mm round the max radius where the cherenkov come is still inside
+geo_cut=float(args.geo) #mm round the max radius where the cherenkov come is still inside
 main.mkdir("GeoBadCut")
 main.cd("GeoBadCut")
 #cut on geo and on bad
 df=df.drop(df[   (pow((df["X"]-x_m),2)+pow((df["Y"]-y_m),2))>pow(geo_cut,2)     ].index)
+print(x_m,y_m)
 df=df.drop(df[   df["BadFlag"]==True    ].index)
 #get lists
 x,y,sigma,noises, risetime, amplitudes=df["X"].tolist(),df["Y"].tolist(),df["SigmaOutNoise"].tolist(),df["Baseline"].tolist(),df["risetime"].tolist(),df["Amplitude"].tolist()

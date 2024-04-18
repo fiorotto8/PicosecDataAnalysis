@@ -134,28 +134,25 @@ main.cd("RawWaveforms")
 print("Analyzing...")
 start=time.time()
 i=0
-
-def AnalWave(args_tuple):
-    waveT, waveV, name = args_tuple
-    signal = wf.ScopeSignalSlow(waveT, waveV, name, sigmaBad=5, risetimeCut=None, badDebug=args.debugBad)
-    return [signal.badSignalFlag, signal.SigmaOutNoise, signal.baseLine, signal.risetime, -1 * signal.Ampmin]
-
-def process_wave(wave):
-    if args.draw is None:
-        return AnalWave((wave["T"], wave["V"], args.name + str(i)))
-    else:
-        wf.ScopeSignalSlow(wave["T"], wave["V"], args.name + str(i)).WaveSave(EpeakLines=True, Write=True)
-        return AnalWave((wave["T"], wave["V"], args.name + str(i)))
-
-results = []
+def AnalWave(waveT,waveV,name):
+    signal=wf.ScopeSignalSlow(waveT,waveV,name,sigmaBad=5,risetimeCut=None,badDebug=args.debugBad)
+    return [signal.badSignalFlag,signal.SigmaOutNoise,signal.baseLine,signal.risetime,-1*signal.Ampmin]
+#if drawing cannot paralelize
 if args.draw is None:
-    with mp.Pool(mp.cpu_count()) as pool:
-        # Use tqdm with imap for real-time progress bar
-        results = list(tqdm.tqdm(pool.imap(AnalWave, ((wave["T"], wave["V"], args.name + str(i)) for i, wave in enumerate(waves))), total=len(waves)))
+    pool = mp.Pool(mp.cpu_count())
+    argsList=[]
+    for wave in waves:
+        argsList.append((wave["T"],wave["V"],args.name+str(i)))
+        i=i+1
+    results = pool.starmap(AnalWave,argsList)
+    #results = pool.starmap(AnalWave,[(wave["T"],wave["V"],args.name+str(i)) for wave in waves])
+    pool.close()
 else:
-    # Use tqdm directly in the loop
-    for i, wave in enumerate(tqdm.tqdm(waves)):
-        results.append(process_wave(wave))
+    results=[]
+    for wave in tqdm.tqdm(waves):
+        wf.ScopeSignalSlow(wave["T"],wave["V"],args.name+str(i)).WaveSave(EpeakLines=True, Write=True)
+        results.append(AnalWave(wave["T"],wave["V"],args.name+str(i)))
+        i=i+1
 
 print("Analyzing time (s):", time.time()-start)
 
