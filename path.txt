@@ -1,8 +1,8 @@
 #### Davide PC ####
-base_path="/mnt/c/Matteo/TB_Data/Oct_2022/Run/"
-result_path="/mnt/c/Matteo/TB_Data/Oct_2022/results/"
-trk_path=base_path+"tracker/"
-csv_path="/mnt/c/Matteo/TB_Data/Oct_2022/"
+#base_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
+#result_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/Results/Run"
+#trk_path=base_path+"tracker/"
+#csv_path="/mnt/c/Users/david/cernbox/Work/Picosec/TestBeams/July2023/"
 
 #### Picosec PC - SPE analysis ####
 #base_path="/home/bavia/Documents/Picosec/Ne-CO2_iso_93-5-2/"
@@ -11,6 +11,19 @@ csv_path="/mnt/c/Matteo/TB_Data/Oct_2022/"
 #result_path=base_path+"Results/Run"
 #trk_path=base_path+"tracker/"
 #csv_path="/home/bavia/Documents/Picosec/Ne-CO2_iso_93-5-2/Results/"
+
+#### Picosec PC - SPE analysis ####
+#base_path="/media/bavia/Dati/April_2024/"
+#run_path=base_path+"Run"
+#result_path=base_path+"Results/Run"
+#csv_path=base_path+"Results"
+
+#### Picosec PC - PE analysis ####
+base_path="/media/bavia/Dati/April_2024/"
+run_path=base_path+"Run"
+result_path=base_path+"Results/Run"
+trk_path=base_path+"tracker/"
+csv_path=base_path+"Results"
 
 #### Local test RD51 ####
 #base_path="/home/bavia/Documents/Picosec/resistive/"
@@ -41,3 +54,9 @@ csv_path="/mnt/c/Matteo/TB_Data/Oct_2022/"
 #result_path="/media/bavia/Dati/July_2023/Results/Run"
 #trk_path=base_path+"tracker/"
 #csv_path="/media/bavia/Dati/July_2023/Results/"
+
+###test scope 
+#base_path="/home/bavia/Documents/Picosec/TEST_PMT/"
+#result_path="/home/bavia/Documents/Picosec/TEST_PMT/Results/Run"
+#trk_path=base_path+"tracker/"
+#csv_path="/home/bavia/Documents/Picosec/TEST_PMT/Results/"
